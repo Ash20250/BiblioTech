@@ -1,0 +1,42 @@
+@startuml
+skinparam linetype ortho
+
+entity "Adhérents (Users)" as users {
+  * id : bigint
+  --
+  nom : string
+  prenom : string
+  email : string
+  telephone : string
+}
+
+entity "Livres" as livres {
+  * id : bigint
+  --
+  titre : string
+  isbn : string
+  nombre_pages : integer
+  category_id : bigint <<FK>>
+}
+
+entity "Catégories" as categories {
+  * id : bigint
+  --
+  libelle : string (Roman, BD, etc.)
+}
+
+entity "Emprunts" as emprunts {
+  * id : bigint
+  --
+  date_emprunt : date
+  date_retour_prevue : date
+  date_retour_reelle : date (nullable)
+  user_id : bigint <<FK>>
+  livre_id : bigint <<FK>>
+}
+
+users "1" -- "0..*" emprunts : effectue
+livres "1" -- "0..*" emprunts : est emprunté
+categories "1" -- "0..*" livres : contient
+
+@enduml
