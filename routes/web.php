@@ -36,11 +36,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/livres', [LivreController::class, 'store'])->name('livres.store');
     Route::get('/livres/{id}/modifier', [LivreController::class, 'edit'])->name('livres.edit');
     
-    /** * FIX FINAL ANTI-ERREUR 405 
-     * On accepte PUT, PATCH et POST pour parer à tout conflit de verbe HTTP
-     */
     Route::match(['put', 'patch', 'post'], '/livres/{id}', [LivreController::class, 'update'])->name('livres.update');
-    
     Route::delete('/livres/{id}', [LivreController::class, 'destroy'])->name('livres.destroy');
 
     // --- GESTION DES EMPRUNTS ---
@@ -48,6 +44,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/emprunts/nouveau', [EmpruntController::class, 'create'])->name('emprunt.create');
     Route::post('/emprunts', [EmpruntController::class, 'store'])->name('emprunt.store'); 
     Route::patch('/emprunts/{id}/retourner', [EmpruntController::class, 'retourner'])->name('emprunts.retourner');
+
+    // ✅ NOUVELLE ROUTE : EMPRUNT DIRECT PAR L'USAGER (Cahier des charges)
+    Route::post('/emprunter/{livre}', [EmpruntController::class, 'emprunterParUsager'])->name('emprunter.livre');
 
     // --- GESTION DES SALARIÉS ---
     Route::get('/salaries', [SalarieController::class, 'index'])->name('salaries.index');

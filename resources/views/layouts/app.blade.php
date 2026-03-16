@@ -34,12 +34,15 @@
                 <a href="/catalogue" class="hover:text-[#D2B48C] transition text-sm no-underline">Catalogue</a>
                 
                 @auth
-                    <a href="/emprunts" class="hover:text-[#D2B48C] transition text-sm no-underline">Registre</a>
+                    {{-- RESTRICTION : SEUL L'ADMIN VOIT LE REGISTRE ET LE BOUTON EMPRUNT --}}
+                    @if(Auth::user()->email == 'ashdh@gmail.com')
+                        <a href="/emprunts" class="hover:text-[#D2B48C] transition text-sm no-underline">Registre</a>
 
-                    <div class="flex items-center gap-3">
-                        <a href="/emprunts/nouveau" class="bg-[#8B4513] px-4 py-2 rounded shadow-inner hover:bg-[#5D4037] transition text-sm no-underline text-white">
-                            Nouvel Emprunt
-                        </a>
+                        <div class="flex items-center gap-3">
+                            <a href="/emprunts/nouveau" class="bg-[#8B4513] px-4 py-2 rounded shadow-inner hover:bg-[#5D4037] transition text-sm no-underline text-white">
+                                Nouvel Emprunt
+                            </a>
+                    @endif
 
                         <form method="POST" action="{{ route('logout') }}" class="inline ml-2">
                             @csrf
@@ -47,7 +50,9 @@
                                 Quitter
                             </button>
                         </form>
-                    </div>
+                    @if(Auth::user()->email == 'ashdh@gmail.com')
+                        </div>
+                    @endif
                 @endauth
             </div>
         </div>

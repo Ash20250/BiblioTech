@@ -4,6 +4,13 @@
     <div class="py-12" style="background-color: #f4ece1; min-height: 100vh; font-family: 'Georgia', serif;">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             
+            {{-- Notifications de succès --}}
+            @if(session('success'))
+                <div class="mb-6 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-md">
+                    {{ session('success') }}
+                </div>
+            @endif
+
             <div class="flex justify-between items-center mb-8">
                 <h2 class="text-3xl font-bold text-amber-900 italic">📜 Mon Espace Adhérent</h2>
                 @if(isset($nbLivresEnCours) && $nbLivresEnCours > 0)
@@ -37,7 +44,7 @@
                                     <th class="p-4 italic font-medium">Titre de l'ouvrage</th>
                                     <th class="p-4 font-medium text-sm uppercase">Emprunté le</th>
                                     <th class="p-4 font-medium text-sm uppercase text-center">Retour prévu</th>
-                                    <th class="p-4 font-medium text-sm uppercase text-center">Statut</th>
+                                    <th class="p-4 font-medium text-sm uppercase text-center">Statut / Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -58,9 +65,20 @@
                                                     ✅ RENDU le {{ \Carbon\Carbon::parse($emprunt->date_retour_effectif)->format('d/m/Y') }}
                                                 </span>
                                             @else
-                                                <span class="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-[10px] font-bold border border-blue-200 shadow-sm animate-pulse tracking-tighter">
-                                                    ⏳ EN COURS
-                                                </span>
+                                                <div class="flex flex-col items-center gap-2">
+                                                    <span class="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-[10px] font-bold border border-blue-200 shadow-sm animate-pulse tracking-tighter uppercase">
+                                                        ⏳ EN COURS
+                                                    </span>
+                                                    
+                                                    {{-- FORMULAIRE DE RETOUR POUR L'USAGER --}}
+                                                    <form action="{{ route('emprunts.retourner', $emprunt->id) }}" method="POST" onsubmit="return confirm('Confirmez-vous avoir déposé le livre dans la boîte de retour ?')">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit" class="text-[9px] bg-amber-700 hover:bg-amber-900 text-white px-2 py-1 rounded transition uppercase font-sans font-bold shadow-sm">
+                                                            Rendre le livre
+                                                        </button>
+                                                    </form>
+                                                </div>
                                             @endif
                                         </td>
                                     </tr>

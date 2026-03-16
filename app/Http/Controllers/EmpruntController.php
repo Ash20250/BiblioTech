@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Emprunt;
 use App\Models\User;
 use App\Models\Exemplaire;
+use App\Models\Livre; // Ajouté pour le bouton emprunter
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -12,10 +13,11 @@ class EmpruntController extends Controller
 {
     /**
      * Affiche le registre complet (Rendus + En cours + Retards)
+     * Accessible au Bibliothécaire
      */
     public function index()
     {
-        // On récupère tout le monde avec pagination pour la performance (250 lignes)
+        // On récupère tout le monde avec pagination pour la performance
         $emprunts = Emprunt::with(['usager', 'exemplaire.livre'])
             ->orderBy('date_emprunt', 'desc')
             ->paginate(15); 
@@ -24,13 +26,13 @@ class EmpruntController extends Controller
     }
 
     /**
-     * Affiche le formulaire de création
+     * Affiche le formulaire de création (Back-office)
      */
     public function create()
     {
         $usagers = User::orderBy('name')->get();
         
-        // On ne propose que les exemplaires réellement disponibles (sans emprunt en cours)
+        // On ne propose que les exemplaires réellement disponibles
         $exemplaires = Exemplaire::whereDoesntHave('emprunts', function ($query) {
             $query->whereNull('date_retour_effectif');
         })->with('livre')->get(); 
@@ -39,17 +41,16 @@ class EmpruntController extends Controller
     }
 
     /**
-     * Enregistre l'emprunt (avec validation métier)
+     * Enregistre l'emprunt via le bibliothécaire
      */
     public function store(Request $request)
     {
-        // 1. Validation de base
         $request->validate([
             'usager_id' => 'required|exists:users,id',
             'exemplaire_id' => 'required|exists:exemplaires,id',
         ]);
 
-        // 2. Règle métier : Un usager ne peut avoir qu'un seul livre à la fois
+        // Règle métier : Un usager ne peut avoir qu'un seul livre à la fois
         $dejaUnEmprunt = Emprunt::where('usager_id', $request->usager_id)
             ->whereNull('date_retour_effectif')
             ->first();
@@ -60,7 +61,6 @@ class EmpruntController extends Controller
                 ->withInput();
         }
 
-        // 3. Création de l'emprunt
         Emprunt::create([
             'usager_id' => $request->usager_id,
             'exemplaire_id' => $request->exemplaire_id,
@@ -73,7 +73,44 @@ class EmpruntController extends Controller
     }
 
     /**
-     * Marque un livre comme rendu
+     * ✅ MÉTHODE POUR L'USAGER (Bouton Catalogue)
+     * Répond au cahier des charges : "Un usager peut emprunter"
+     */
+    public function emprunterParUsager(Livre $livre)
+    {
+        $user = auth()->user();
+
+        // 1. Vérification : Un seul livre à la fois
+        $dejaUnEmprunt = Emprunt::where('usager_id', $user->id)
+            ->whereNull('date_retour_effectif')
+            ->exists();
+
+        if ($dejaUnEmprunt) {
+            return redirect()->back()->with('error', '⚠️ Vous avez déjà un emprunt en cours. Rendez-le pour en prendre un nouveau !');
+        }
+
+        // 2. Trouver un exemplaire disponible pour ce livre
+        $exemplaire = $livre->exemplaires()->whereDoesntHave('emprunts', function($q) {
+            $q->whereNull('date_retour_effectif');
+        })->first();
+
+        if (!$exemplaire) {
+            return redirect()->back()->with('error', 'Désolé, ce livre n\'est plus disponible en rayon.');
+        }
+
+        // 3. Création de l'emprunt (30 jours)
+        Emprunt::create([
+            'usager_id' => $user->id,
+            'exemplaire_id' => $exemplaire->id,
+            'date_emprunt' => now(),
+            'date_retour_prevue' => now()->addDays(30),
+        ]);
+
+        return redirect()->route('catalogue')->with('success', '📖 Livre emprunté avec succès ! Il apparaît maintenant dans votre profil.');
+    }
+
+    /**
+     * Marque un livre comme rendu (Action du Bibliothécaire)
      */
     public function retourner($id)
     {

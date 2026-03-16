@@ -7,9 +7,16 @@
 
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6 py-6">
         
+        {{-- Affichage des messages de succès ou d'erreur --}}
         @if(session('success'))
             <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-sm mb-4">
                 <p>{{ session('success') }}</p>
+            </div>
+        @endif
+
+        @if(session('error'))
+            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-sm mb-4">
+                <p>{{ session('error') }}</p>
             </div>
         @endif
 
@@ -32,9 +39,14 @@
                         🔍 Rechercher
                     </button>
 
-                    <a href="{{ route('livres.create') }}" class="bg-green-700 text-white px-6 py-3 rounded-md font-bold hover:bg-green-800 transition shadow-md text-center">
-                        ➕ Ajouter
-                    </a>
+                    {{-- BOUTON AJOUTER : SEULEMENT POUR L'ADMIN --}}
+                    @auth
+                        @if(Auth::user()->email == 'ashdh@gmail.com')
+                            <a href="{{ route('livres.create') }}" class="bg-green-700 text-white px-6 py-3 rounded-md font-bold hover:bg-green-800 transition shadow-md text-center">
+                                ➕ Ajouter
+                            </a>
+                        @endif
+                    @endauth
                 </div>
 
                 <div class="flex items-center gap-2">
@@ -58,13 +70,18 @@
                         <th class="p-5 border-b border-[#8B4513]">Auteur</th>
                         <th class="p-5 border-b border-[#8B4513]">Catégorie</th>
                         <th class="p-5 border-b border-[#8B4513] text-center">Disponibilité</th>
-                        <th class="p-5 border-b border-[#8B4513] text-right">Gestion</th>
+                        
+                        {{-- GESTION : SEULEMENT POUR L'ADMIN --}}
+                        @auth
+                            @if(Auth::user()->email == 'ashdh@gmail.com')
+                                <th class="p-5 border-b border-[#8B4513] text-right">Gestion</th>
+                            @endif
+                        @endauth
                     </tr>
                 </thead>
                 <tbody class="text-[#5D4037] font-serif">
                     @forelse($livres as $livre)
                         @php
-                            // On vérifie s'il reste des exemplaires qui n'ont pas d'emprunt en cours
                             $dispo = $livre->exemplaires->filter(function($ex) {
                                 return $ex->emprunts->where('date_retour_effectif', null)->isEmpty();
                             })->count();
@@ -78,25 +95,43 @@
                                     <span class="px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-bold border border-green-200">
                                         {{ $dispo }} en rayon
                                     </span>
+
+                                    {{-- ACTION EMPRUNTER : SEULEMENT POUR L'USAGER CONNECTÉ --}}
+                                    @auth
+                                        @if(Auth::user()->email !== 'ashdh@gmail.com')
+                                            <form action="{{ route('emprunter.livre', $livre->id) }}" method="POST" class="mt-2">
+                                                @csrf
+                                                <button type="submit" class="text-xs bg-[#4A3728] text-white px-3 py-1 rounded hover:bg-[#8B4513] transition shadow-sm font-sans uppercase tracking-tighter">
+                                                    Prendre ce livre
+                                                </button>
+                                            </form>
+                                        @endif
+                                    @endauth
                                 @else
                                     <span class="px-3 py-1 rounded-full bg-red-100 text-red-800 text-xs font-bold border border-red-200">
                                         🚫 Épuisé
                                     </span>
                                 @endif
                             </td>
-                            <td class="p-5 text-right">
-                                <div class="flex justify-end gap-4 uppercase text-xs font-bold">
-                                    <a href="{{ route('livres.edit', $livre->id) }}" class="text-blue-600 hover:text-blue-900">Modifier</a>
-                                    <form action="{{ route('livres.destroy', $livre->id) }}" method="POST" onsubmit="return confirm('Supprimer cet ouvrage ?')">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="text-red-600 hover:text-red-900">Supprimer</button>
-                                    </form>
-                                </div>
-                            </td>
+
+                            {{-- ACTIONS ADMIN --}}
+                            @auth
+                                @if(Auth::user()->email == 'ashdh@gmail.com')
+                                    <td class="p-5 text-right">
+                                        <div class="flex justify-end gap-4 uppercase text-xs font-bold">
+                                            <a href="{{ route('livres.edit', $livre->id) }}" class="text-blue-600 hover:text-blue-900">Modifier</a>
+                                            <form action="{{ route('livres.destroy', $livre->id) }}" method="POST" onsubmit="return confirm('Supprimer cet ouvrage ?')">
+                                                @csrf @method('DELETE')
+                                                <button type="submit" class="text-red-600 hover:text-red-900">Supprimer</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                @endif
+                            @endauth
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="p-10 text-center italic text-[#795548]">Aucun ouvrage trouvé dans le grimoire.</td>
+                            <td colspan="6" class="p-10 text-center italic text-[#795548]">Aucun ouvrage trouvé dans le grimoire.</td>
                         </tr>
                     @endforelse
                 </tbody>
