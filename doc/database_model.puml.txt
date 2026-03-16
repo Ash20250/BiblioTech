@@ -1,42 +1,49 @@
 @startuml
-skinparam linetype ortho
+skinparam style strictuml
+skinparam classAttributeIconSize 0
 
-entity "Adhérents (Users)" as users {
-  * id : bigint
-  --
-  nom : string
-  prenom : string
-  email : string
-  telephone : string
+class Auteur {
+  - id : int
+  - nom : string
 }
 
-entity "Livres" as livres {
-  * id : bigint
-  --
-  titre : string
-  isbn : string
-  nombre_pages : integer
-  category_id : bigint <<FK>>
+class Categorie {
+  - id : int
+  - libelle : string
 }
 
-entity "Catégories" as categories {
-  * id : bigint
-  --
-  libelle : string (Roman, BD, etc.)
+class Statut {
+  - id : int
+  - libelle : string
 }
 
-entity "Emprunts" as emprunts {
-  * id : bigint
-  --
-  date_emprunt : date
-  date_retour_prevue : date
-  date_retour_reelle : date (nullable)
-  user_id : bigint <<FK>>
-  livre_id : bigint <<FK>>
+class Livre {
+  - id : int
+  - titre : string
+  - auteur_id : int
+  - categorie_id : int
+  - statut_id : int
 }
 
-users "1" -- "0..*" emprunts : effectue
-livres "1" -- "0..*" emprunts : est emprunté
-categories "1" -- "0..*" livres : contient
+class Salarie {
+  - id : int
+  - nom : string
+  - email : string
+  - mdp : string
+}
 
+class Emprunt << (P,#FFAAAA) Table Pivot >> {
+  - id : int
+  - livre_id : int
+  - salarie_id : int
+  - date_emprunt : date
+  - date_retour_prevue : date
+}
+
+' Relations
+Auteur "1" -- "1..*" Livre : écrit
+Categorie "1" -- "0..*" Livre : classifie
+Statut "1" -- "0..*" Livre : définit l'état
+Livre "1" -- "0..*" Emprunt : est loué
+Salarie "1" -- "0..*" Emprunt : effectue
 @enduml
