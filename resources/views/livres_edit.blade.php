@@ -15,22 +15,36 @@
 
             <form action="{{ route('livres.update', $livre->id) }}" method="POST" class="space-y-6">
                 @csrf
-                @method('PATCH') <div class="form-group">
+                @method('PATCH') 
+
+                <div class="form-group">
                     <label for="titre" class="block text-sm font-bold text-[#4A3728] uppercase mb-2">Titre de l'œuvre</label>
                     <input type="text" name="titre" id="titre" value="{{ old('titre', $livre->titre) }}" required
                         class="w-full p-3 border-2 border-[#D2B48C] rounded-md bg-white text-[#5D4037] focus:border-[#8B4513] outline-none">
                 </div>
 
                 <div class="form-group">
-                    <label for="auteur" class="block text-sm font-bold text-[#4A3728] uppercase mb-2">Auteur</label>
-                    <input type="text" name="auteur" id="auteur" value="{{ old('auteur', $livre->auteur) }}" required
+                    <label for="auteur_id" class="block text-sm font-bold text-[#4A3728] uppercase mb-2">Auteur</label>
+                    <select name="auteur_id" id="auteur_id" required 
                         class="w-full p-3 border-2 border-[#D2B48C] rounded-md bg-white text-[#5D4037] focus:border-[#8B4513] outline-none">
+                        @foreach($auteurs as $auteur)
+                            <option value="{{ $auteur->id }}" {{ $livre->auteur_id == $auteur->id ? 'selected' : '' }}>
+                                {{ $auteur->nom }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="theme" class="block text-sm font-bold text-[#4A3728] uppercase mb-2">Thème</label>
-                    <input type="text" name="theme" id="theme" value="{{ old('theme', $livre->theme) }}"
+                    <label for="categorie_id" class="block text-sm font-bold text-[#4A3728] uppercase mb-2">Catégorie</label>
+                    <select name="categorie_id" id="categorie_id" required 
                         class="w-full p-3 border-2 border-[#D2B48C] rounded-md bg-white text-[#5D4037] focus:border-[#8B4513] outline-none">
+                        @foreach($categories as $categorie)
+                            <option value="{{ $categorie->id }}" {{ $livre->categorie_id == $categorie->id ? 'selected' : '' }}>
+                                {{ $categorie->nom }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
 
                 <div class="pt-4 flex gap-4">

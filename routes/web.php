@@ -7,6 +7,12 @@ use App\Http\Controllers\EmpruntController;
 use App\Http\Controllers\ProfilController; 
 use App\Http\Controllers\LivreController;
 
+/*
+|--------------------------------------------------------------------------
+| Web Routes - BiblioTech
+|--------------------------------------------------------------------------
+*/
+
 // --- PAGES PUBLIQUES ---
 Route::get('/', function () {
     return view('welcome');
@@ -29,11 +35,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/livres/nouveau', [LivreController::class, 'create'])->name('livres.create');
     Route::post('/livres', [LivreController::class, 'store'])->name('livres.store');
     Route::get('/livres/{id}/modifier', [LivreController::class, 'edit'])->name('livres.edit');
-    Route::patch('/livres/{id}', [LivreController::class, 'update'])->name('livres.update');
+    
+    /** * FIX FINAL ANTI-ERREUR 405 
+     * On accepte PUT, PATCH et POST pour parer à tout conflit de verbe HTTP
+     */
+    Route::match(['put', 'patch', 'post'], '/livres/{id}', [LivreController::class, 'update'])->name('livres.update');
+    
     Route::delete('/livres/{id}', [LivreController::class, 'destroy'])->name('livres.destroy');
 
     // --- GESTION DES EMPRUNTS ---
-    // J'ai simplifié l'URL POST ici pour correspondre au test
     Route::get('/emprunts', [EmpruntController::class, 'index'])->name('emprunts.index');
     Route::get('/emprunts/nouveau', [EmpruntController::class, 'create'])->name('emprunt.create');
     Route::post('/emprunts', [EmpruntController::class, 'store'])->name('emprunt.store'); 

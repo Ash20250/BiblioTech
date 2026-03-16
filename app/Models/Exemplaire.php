@@ -9,6 +9,7 @@ class Exemplaire extends Model
 {
     use HasFactory; 
 
+    // Les champs que l'on autorise à remplir via Exemplaire::create()
     protected $fillable = ['mise_en_service', 'livre_id', 'statut_id'];
 
     /**
@@ -20,7 +21,7 @@ class Exemplaire extends Model
     }
 
     /**
-     * Relation : Un exemplaire a un Statut (Excellent, Bon, etc.)
+     * Relation : Un exemplaire a un Statut (Ex: 1 pour Disponible)
      */
     public function statut()
     {
@@ -28,8 +29,8 @@ class Exemplaire extends Model
     }
 
     /**
-     * NOUVEAU - Relation : Un exemplaire peut avoir plusieurs emprunts au cours de sa vie
-     * Cette relation permet au contrôleur de vérifier la disponibilité.
+     * Relation : Un exemplaire peut avoir plusieurs emprunts
+     * Utilisé dans le catalogue pour vérifier si le dernier emprunt est rendu.
      */
     public function emprunts()
     {
