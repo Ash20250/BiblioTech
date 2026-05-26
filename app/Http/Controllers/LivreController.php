@@ -5,19 +5,22 @@ namespace App\Http\Controllers;
 use App\Models\Livre;
 use App\Models\Auteur;
 use App\Models\Categorie;
-use App\Models\Exemplaire; // INDISPENSABLE pour que la ligne 77 fonctionne
+use App\Models\Exemplaire;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class LivreController extends Controller
 {
     /**
-     * Affiche le catalogue avec filtres de recherche
+     * Affiche le catalogue avec filtres
+     * Accessible par : Visiteur (non-connecté), Usager, Admin
      */
     public function index(Request $request)
     {
+        // On charge les relations pour éviter les erreurs "null" sur l'auteur ou catégorie
         $query = Livre::with(['auteur', 'categorie', 'exemplaires.emprunts']);
 
-        // Filtre par Titre ou Auteur
+        // Filtre Recherche : Titre ou Nom d'Auteur
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -33,11 +36,11 @@ class LivreController extends Controller
             $query->where('categorie_id', $request->categorie_id);
         }
 
-        // Filtre par Disponibilité
+        // Filtre Disponibilité : Uniquement les livres ayant au moins un exemplaire libre
         if ($request->filled('disponible')) {
             $query->whereHas('exemplaires', function($q) {
                 $q->whereDoesntHave('emprunts', function($e) {
-                    $e->whereNull('date_retour_effectif');
+                    $e->whereNull('date_retour'); 
                 });
             });
         }
@@ -49,7 +52,7 @@ class LivreController extends Controller
     }
 
     /**
-     * Affiche le formulaire de création
+     * Formulaire d'ajout (Admin uniquement via Middleware dans les routes)
      */
     public function create()
     {
@@ -59,23 +62,24 @@ class LivreController extends Controller
     }
 
     /**
-     * Enregistre un nouveau livre + UN EXEMPLAIRE AUTOMATIQUE
+     * Enregistre un livre et crée automatiquement un exemplaire physique
      */
     public function store(Request $request)
     {
         $request->validate([
-            'titre' => 'required|max:255',
-            'auteur' => 'required|max:255',
+            'titre' => 'required|max:255|unique:livres,titre',
+            'auteur' => 'required|max:255', // Nom de l'auteur tapé à la main
             'theme' => 'nullable|max:255',
             'isbn' => 'nullable|max:20',
+        ], [
+            'titre.unique' => '📚 Ce titre existe déjà dans la bibliothèque.'
         ]);
 
-        // 1. Gérer l'auteur et la catégorie
+        // Évite de créer des doublons d'auteurs ou de catégories
         $auteur = Auteur::firstOrCreate(['nom' => $request->auteur]);
         $nomCategorie = $request->theme ?? 'Général';
         $categorie = Categorie::firstOrCreate(['nom' => $nomCategorie]);
 
-        // 2. Création du livre
         $livre = Livre::create([
             'titre' => $request->titre,
             'auteur_id' => $auteur->id,
@@ -83,11 +87,10 @@ class LivreController extends Controller
             'isbn' => $request->isbn,
         ]);
 
-        // 3. CRÉATION DE L'EXEMPLAIRE (Pour éviter l'affichage "Épuisé")
-        // Note : On utilise l'ID 1 pour le statut "Disponible" par défaut
+        // Création immédiate d'un exemplaire pour qu'il soit "En rayon"
         Exemplaire::create([
             'livre_id' => $livre->id,
-            'statut_id' => 1, 
+            'statut_id' => 1, // ID correspondant au statut 'Disponible'
             'mise_en_service' => now(),
         ]);
 
@@ -95,7 +98,7 @@ class LivreController extends Controller
     }
 
     /**
-     * Affiche le formulaire de modification
+     * Formulaire de modification
      */
     public function edit($id)
     {
@@ -106,16 +109,18 @@ class LivreController extends Controller
     }
 
     /**
-     * Met à jour un livre
+     * Mise à jour des infos du livre
      */
     public function update(Request $request, $id)
     {
         $livre = Livre::findOrFail($id);
         
         $request->validate([
-            'titre' => 'required|max:255',
+            'titre' => ['required', 'max:255', Rule::unique('livres')->ignore($livre->id)],
             'auteur_id' => 'required|exists:auteurs,id',
             'categorie_id' => 'required|exists:categories,id',
+        ], [
+            'titre.unique' => '❌ Ce titre est déjà utilisé par un autre ouvrage.'
         ]);
 
         $livre->update($request->all()); 
@@ -124,7 +129,7 @@ class LivreController extends Controller
     }
 
     /**
-     * Supprime un livre
+     * Suppression (Retire le livre et ses exemplaires)
      */
     public function destroy($id)
     {

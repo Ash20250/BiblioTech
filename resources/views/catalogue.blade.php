@@ -7,7 +7,7 @@
 
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6 py-6">
         
-        {{-- Affichage des messages de succès ou d'erreur --}}
+        {{-- Messages de notification --}}
         @if(session('success'))
             <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-sm mb-4">
                 <p>{{ session('success') }}</p>
@@ -20,6 +20,7 @@
             </div>
         @endif
 
+        {{-- Barre de recherche --}}
         <div class="bg-[#FFFDF9] p-6 rounded-lg shadow-md border border-[#D2B48C]">
             <form action="{{ route('catalogue') }}" method="GET" class="space-y-4">
                 <div class="flex flex-col md:flex-row gap-4">
@@ -39,29 +40,18 @@
                         🔍 Rechercher
                     </button>
 
-                    {{-- BOUTON AJOUTER : SEULEMENT POUR L'ADMIN --}}
                     @auth
-                        @if(Auth::user()->email == 'ashdh@gmail.com')
+                        @if(Auth::user()->role === 'bibliothecaire')
                             <a href="{{ route('livres.create') }}" class="bg-green-700 text-white px-6 py-3 rounded-md font-bold hover:bg-green-800 transition shadow-md text-center">
                                 ➕ Ajouter
                             </a>
                         @endif
                     @endauth
                 </div>
-
-                <div class="flex items-center gap-2">
-                    <input type="checkbox" name="disponible" value="1" id="dispo" {{ request('disponible') ? 'checked' : '' }} class="rounded border-[#D2B48C] text-[#8B4513] focus:ring-[#8B4513]">
-                    <label for="dispo" class="text-sm text-[#795548] italic font-serif">Afficher uniquement les livres disponibles immédiatement</label>
-                </div>
             </form>
-            
-            <div class="mt-4 text-right">
-                <span class="text-[#795548] italic font-serif text-sm">
-                    Affichage de {{ $livres->firstItem() ?? 0 }} à {{ $livres->lastItem() ?? 0 }} sur <strong class="text-[#4A3728]">{{ $livres->total() }}</strong> ouvrages.
-                </span>
-            </div>
         </div>
 
+        {{-- Tableau du Catalogue --}}
         <div class="bg-[#FFFDF9] rounded-lg shadow-xl border-2 border-[#D2B48C] overflow-hidden">
             <table class="w-full text-left border-collapse">
                 <thead>
@@ -70,10 +60,8 @@
                         <th class="p-5 border-b border-[#8B4513]">Auteur</th>
                         <th class="p-5 border-b border-[#8B4513]">Catégorie</th>
                         <th class="p-5 border-b border-[#8B4513] text-center">Disponibilité</th>
-                        
-                        {{-- GESTION : SEULEMENT POUR L'ADMIN --}}
                         @auth
-                            @if(Auth::user()->email == 'ashdh@gmail.com')
+                            @if(Auth::user()->role === 'bibliothecaire')
                                 <th class="p-5 border-b border-[#8B4513] text-right">Gestion</th>
                             @endif
                         @endauth
@@ -82,62 +70,147 @@
                 <tbody class="text-[#5D4037] font-serif">
                     @forelse($livres as $livre)
                         @php
-                            $dispo = $livre->exemplaires->filter(function($ex) {
-                                return $ex->emprunts->where('date_retour_effectif', null)->isEmpty();
-                            })->count();
-                        @endphp
-                        <tr class="border-b border-[#F4F1EA] hover:bg-[#FDFBF7] transition-colors">
-                            <td class="p-5 font-bold text-[#4A3728]">{{ $livre->titre }}</td>
-                            <td class="p-5 italic text-[#795548]">{{ $livre->auteur->nom }}</td>
-                            <td class="p-5 text-sm">{{ $livre->categorie->nom }}</td>
-                            <td class="p-5 text-center">
-                                @if($dispo > 0)
-                                    <span class="px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-bold border border-green-200">
-                                        {{ $dispo }} en rayon
-                                    </span>
+                            $userId = Auth::id();
 
-                                    {{-- ACTION EMPRUNTER : SEULEMENT POUR L'USAGER CONNECTÉ --}}
+                            // 1. Exemplaires physiquement présents en rayon (ni réservés, ni empruntés)
+                            $exemplairesEnRayon = $livre->exemplaires->filter(function($ex) {
+                                return is_null($ex->reserved_by_user_id) && $ex->emprunts->where('date_retour', null)->isEmpty();
+                            });
+
+                            // 2. Exemplaires actuellement empruntés mais sans réservation (donc réservables)
+                            $exemplairesReservables = $livre->exemplaires->filter(function($ex) {
+                                return is_null($ex->reserved_by_user_id) && $ex->emprunts->where('date_retour', null)->isNotEmpty();
+                            });
+
+                            // 3. Vérifier si l'utilisateur connecté a réservé un exemplaire
+                            $monExemplaireReserve = $userId ? $livre->exemplaires->where('reserved_by_user_id', $userId)->first() : null;
+                            
+                            $nbEnRayon = $exemplairesEnRayon->count();
+                        @endphp
+                        
+                        <tr class="border-b border-[#F4F1EA] hover:bg-[#FDFBF7] transition-colors">
+                            <td class="p-5">
+                                <div class="flex items-center gap-3">
                                     @auth
-                                        @if(Auth::user()->email !== 'ashdh@gmail.com')
-                                            <form action="{{ route('emprunter.livre', $livre->id) }}" method="POST" class="mt-2">
+                                        <form action="{{ route('favoris.toggle', $livre->id) }}" method="POST" class="inline">
+                                            @csrf
+                                            <button type="submit" class="text-2xl transition transform hover:scale-125 focus:outline-none">
+                                                @if(Auth::user()->favoris->contains($livre->id))
+                                                    <span class="text-red-500">❤️</span>
+                                                @else
+                                                    <span class="text-gray-300 hover:text-red-300">🤍</span>
+                                                @endif
+                                            </button>
+                                        </form>
+                                    @endauth
+                                    <span class="font-bold text-[#4A3728]">{{ $livre->titre }}</span>
+                                </div>
+                            </td>
+                            
+                            <td class="p-5 italic text-[#795548]">{{ $livre->auteur->nom ?? 'Auteur inconnu' }}</td>
+                            <td class="p-5 text-sm">{{ $livre->categorie->nom ?? 'Général' }}</td>
+                            
+                            <td class="p-5 text-center">
+                                <div class="flex flex-col items-center gap-2">
+                                    
+                                    {{-- 🔐 ZONE AUTHENTIFIÉE : Adhérents & Bibliothécaires connectés --}}
+                                    @auth
+                                        @if($monExemplaireReserve)
+                                            {{-- CAS : J'ai déjà une réservation --}}
+                                            <span class="px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-bold border border-green-200">
+                                                ✅ Réservé pour vous
+                                            </span>
+                                            <form action="{{ route('emprunter.livre', $livre->id) }}" method="POST">
                                                 @csrf
-                                                <button type="submit" class="text-xs bg-[#4A3728] text-white px-3 py-1 rounded hover:bg-[#8B4513] transition shadow-sm font-sans uppercase tracking-tighter">
-                                                    Prendre ce livre
+                                                <button type="submit" class="w-32 text-xs bg-[#4A3728] text-white px-3 py-1 rounded hover:bg-[#8B4513] transition uppercase font-bold shadow">
+                                                    Emprunter
                                                 </button>
                                             </form>
+                                        @else
+                                            {{-- Statut Visuel selon les stocks --}}
+                                            @if($nbEnRayon > 0)
+                                                <span class="px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-bold border border-green-200">
+                                                    {{ $nbEnRayon }} en rayon
+                                                </span>
+                                            @elseif($exemplairesReservables->isNotEmpty())
+                                                <span class="px-3 py-1 rounded-full bg-orange-100 text-orange-800 text-xs font-bold border border-orange-200">
+                                                    ⏳ Indisponible
+                                                </span>
+                                            @else
+                                                <span class="px-3 py-1 rounded-full bg-red-100 text-red-800 text-xs font-bold border border-red-200">
+                                                    🚫 Épuisé
+                                                </span>
+                                            @endif
+
+                                            {{-- Boutons d'action visibles uniquement pour les clients/adhérents --}}
+                                            @if(Auth::user()->role !== 'bibliothecaire')
+                                                <div class="flex flex-col gap-2 mt-1">
+                                                    @if($nbEnRayon > 0)
+                                                        <form action="{{ route('emprunter.livre', $livre->id) }}" method="POST">
+                                                            @csrf
+                                                            <button type="submit" class="w-32 text-xs bg-[#4A3728] text-white px-3 py-1 rounded hover:bg-[#8B4513] transition uppercase font-bold shadow">
+                                                                Emprunter
+                                                            </button>
+                                                        </form>
+                                                    @endif
+
+                                                    @if($exemplairesReservables->isNotEmpty())
+                                                        <form action="{{ route('reserver.exemplaire', $exemplairesReservables->first()->id) }}" method="POST">
+                                                            @csrf
+                                                            <button type="submit" class="w-32 text-xs bg-orange-500 text-white px-3 py-1 rounded hover:bg-orange-600 transition uppercase font-bold shadow">
+                                                                Réserver
+                                                            </button>
+                                                        </form>
+                                                    @endif
+                                                </div>
+                                            @endif
                                         @endif
                                     @endauth
-                                @else
-                                    <span class="px-3 py-1 rounded-full bg-red-100 text-red-800 text-xs font-bold border border-red-200">
-                                        🚫 Épuisé
-                                    </span>
-                                @endif
+
+                                    {{-- 🌍 ZONE INVITÉ : Visiteurs non connectés --}}
+                                    @guest
+                                        @if($nbEnRayon > 0)
+                                            <span class="px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-bold border border-green-200">
+                                                ✔ Disponible ({{ $nbEnRayon }})
+                                            </span>
+                                        @elseif($exemplairesReservables->isNotEmpty())
+                                            <span class="px-3 py-1 rounded-full bg-orange-100 text-orange-800 text-xs font-bold border border-orange-200">
+                                                ⏳ Emprunté (Réservable)
+                                            </span>
+                                        @else
+                                            <span class="px-3 py-1 rounded-full bg-red-100 text-red-800 text-xs font-bold border border-red-200">
+                                                🚫 Non disponible
+                                            </span>
+                                        @endif
+                                        <span class="text-[10px] text-gray-400 italic">Connectez-vous pour interagir</span>
+                                    @endguest
+
+                                </div>
                             </td>
 
-                            {{-- ACTIONS ADMIN --}}
+                            {{-- Actions Bibliothécaire --}}
                             @auth
-                                @if(Auth::user()->email == 'ashdh@gmail.com')
-                                    <td class="p-5 text-right">
-                                        <div class="flex justify-end gap-4 uppercase text-xs font-bold">
-                                            <a href="{{ route('livres.edit', $livre->id) }}" class="text-blue-600 hover:text-blue-900">Modifier</a>
-                                            <form action="{{ route('livres.destroy', $livre->id) }}" method="POST" onsubmit="return confirm('Supprimer cet ouvrage ?')">
-                                                @csrf @method('DELETE')
-                                                <button type="submit" class="text-red-600 hover:text-red-900">Supprimer</button>
-                                            </form>
-                                        </div>
+                                @if(Auth::user()->role === 'bibliothecaire')
+                                    <td class="p-5 text-right uppercase text-xs font-bold">
+                                        <a href="{{ route('livres.edit', $livre->id) }}" class="text-blue-600 mr-4 hover:underline">Modifier</a>
+                                        <form action="{{ route('livres.destroy', $livre->id) }}" method="POST" class="inline" onsubmit="return confirm('Supprimer ce livre ?')">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="text-red-600 hover:underline">Supprimer</button>
+                                        </form>
                                     </td>
                                 @endif
                             @endauth
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="p-10 text-center italic text-[#795548]">Aucun ouvrage trouvé dans le grimoire.</td>
+                            <td colspan="5" class="p-10 text-center italic text-gray-500">Aucun ouvrage trouvé.</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
 
+        {{-- Pagination --}}
         <div class="mt-4">
             {{ $livres->links() }}
         </div>

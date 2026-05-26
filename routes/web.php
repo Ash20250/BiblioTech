@@ -6,6 +6,7 @@ use App\Http\Controllers\SalarieController;
 use App\Http\Controllers\EmpruntController;
 use App\Http\Controllers\ProfilController; 
 use App\Http\Controllers\LivreController;
+use App\Http\Controllers\FavoriController;
 
 /*
 |--------------------------------------------------------------------------
@@ -24,9 +25,14 @@ Route::redirect('/emprunt', '/emprunts');
 // --- ZONE SÉCURISÉE (Connexion obligatoire) ---
 Route::middleware('auth')->group(function () {
     
-    // --- PROFIL ADHÉRENT ---
-    Route::get('/mon-profil', [ProfilController::class, 'index'])->name('profil.usager');
+    // ✅ GESTION DES FAVORIS
+    Route::post('/favoris/{livre}/toggle', [FavoriController::class, 'toggle'])->name('favoris.toggle');
 
+    // --- PROFIL ADHÉRENT ---
+    // Nommé 'profile.index' pour correspondre aux redirections 'redirect()->route('profile.index')' du Controller
+    Route::get('/mon-profil', [ProfilController::class, 'index'])->name('profile.index');
+
+    // --- TABLEAU DE BORD ---
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
@@ -39,14 +45,18 @@ Route::middleware('auth')->group(function () {
     Route::match(['put', 'patch', 'post'], '/livres/{id}', [LivreController::class, 'update'])->name('livres.update');
     Route::delete('/livres/{id}', [LivreController::class, 'destroy'])->name('livres.destroy');
 
-    // --- GESTION DES EMPRUNTS ---
+    // --- 📜 GESTION DES EMPRUNTS (CORRIGÉE AU PLURIEL) ---
     Route::get('/emprunts', [EmpruntController::class, 'index'])->name('emprunts.index');
-    Route::get('/emprunts/nouveau', [EmpruntController::class, 'create'])->name('emprunt.create');
-    Route::post('/emprunts', [EmpruntController::class, 'store'])->name('emprunt.store'); 
+    Route::get('/emprunts/nouveau', [EmpruntController::class, 'create'])->name('emprunts.create'); // Corrigé : emprunts.create
+    Route::post('/emprunts', [EmpruntController::class, 'store'])->name('emprunts.store');   // Corrigé : emprunts.store
     Route::patch('/emprunts/{id}/retourner', [EmpruntController::class, 'retourner'])->name('emprunts.retourner');
 
-    // ✅ NOUVELLE ROUTE : EMPRUNT DIRECT PAR L'USAGER (Cahier des charges)
+    // EMPRUNT DIRECT PAR L'USAGER (Depuis le catalogue)
     Route::post('/emprunter/{livre}', [EmpruntController::class, 'emprunterParUsager'])->name('emprunter.livre');
+
+    // ✅ RÉSERVATION & ANNULATION (Gestion du stock réservé)
+    Route::post('/reserver/{exemplaire}', [EmpruntController::class, 'reserver'])->name('reserver.exemplaire');
+    Route::post('/reservation/annuler/{exemplaire}', [EmpruntController::class, 'annulerReservation'])->name('reservation.annuler');
 
     // --- GESTION DES SALARIÉS ---
     Route::get('/salaries', [SalarieController::class, 'index'])->name('salaries.index');

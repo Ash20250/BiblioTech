@@ -4,7 +4,7 @@
     <div class="py-12" style="background-color: #f4ece1; min-height: 100vh; font-family: 'Georgia', serif;">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             
-            {{-- Notifications de succès --}}
+            {{-- Notifications --}}
             @if(session('success'))
                 <div class="mb-6 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-md">
                     {{ session('success') }}
@@ -13,13 +13,16 @@
 
             <div class="flex justify-between items-center mb-8">
                 <h2 class="text-3xl font-bold text-amber-900 italic">📜 Mon Espace Adhérent</h2>
-                @if(isset($nbLivresEnCours) && $nbLivresEnCours > 0)
+                
+                {{-- On utilise la variable $nbLivresEnCours envoyée par le ProfilController --}}
+                @if($nbLivresEnCours > 0)
                     <div class="bg-amber-800 text-white px-4 py-2 rounded-full shadow-md border border-amber-600">
                         {{ $nbLivresEnCours }} livre(s) en votre possession
                     </div>
                 @endif
             </div>
 
+            {{-- Infos Adhérent --}}
             <div class="bg-white border-b-4 border-amber-800 rounded-lg shadow-lg p-6 mb-8 border border-amber-200">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -33,6 +36,74 @@
                 </div>
             </div>
 
+            {{-- Mes Coups de Cœur --}}
+            <div class="mb-8 bg-white border-l-4 border-red-600 rounded-lg shadow-lg p-6 border border-amber-200">
+                <h3 class="text-xl font-bold text-amber-900 mb-6 flex items-center gap-2">
+                    <span class="text-red-600">❤️</span> Mes Coups de Cœur
+                </h3>
+
+                @if($favoris->isEmpty())
+                    <p class="italic text-gray-500 text-sm">Votre liste de favoris est vide.</p>
+                @else
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        @foreach($favoris as $livre)
+                            <div class="relative bg-[#FFFDF9] p-4 border border-amber-200 rounded-md shadow-sm hover:shadow-md transition group">
+                                <div class="flex justify-between items-start">
+                                    <div class="pr-8">
+                                        <h4 class="font-bold text-amber-900 leading-tight">{{ $livre->titre }}</h4>
+                                        <p class="text-xs italic text-amber-700 mt-1">{{ $livre->auteur->nom ?? 'Auteur inconnu' }}</p>
+                                    </div>
+                                    <form action="{{ route('favoris.toggle', $livre->id) }}" method="POST" class="absolute top-4 right-4">
+                                        @csrf
+                                        <button type="submit" class="text-xl hover:scale-125 transition">❤️</button>
+                                    </form>
+                                </div>
+                                <div class="mt-4 pt-3 border-t border-amber-100 flex justify-between items-center">
+                                    <span class="text-[10px] uppercase font-bold text-amber-600 px-2 py-0.5 bg-amber-50 rounded">
+                                        {{ $livre->categorie->nom ?? 'Général' }}
+                                    </span>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+
+            {{-- SECTION RÉSERVATIONS : Basée sur reserved_by_user_id --}}
+            <div class="mb-8 bg-white border-l-4 border-orange-500 rounded-lg shadow-lg p-6 border border-amber-200">
+                <h3 class="text-xl font-bold text-amber-900 mb-6 flex items-center gap-2">
+                    <span class="text-orange-500">🔖</span> Mes Réservations en cours
+                </h3>
+
+                @if($reservations->isEmpty())
+                    <p class="italic text-gray-500 text-sm">Vous n'avez aucune réservation en attente.</p>
+                @else
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        @foreach($reservations as $exemplaire)
+                            <div class="flex justify-between items-center p-4 bg-orange-50 border border-orange-200 rounded-lg shadow-sm">
+                                <div>
+                                    <h4 class="font-bold text-amber-900">{{ $exemplaire->livre->titre }}</h4>
+                                    <p class="text-[10px] text-orange-700 font-bold uppercase">Exemplaire : {{ $exemplaire->code_barre }}</p>
+                                </div>
+                                <div class="flex flex-col items-end gap-2">
+                                    <span class="inline-block px-3 py-1 bg-orange-500 text-white text-[10px] font-bold rounded-full shadow-sm">
+                                        RÉSERVÉ
+                                    </span>
+                                    
+                                    <form action="{{ route('reservation.annuler', $exemplaire->id) }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="text-[10px] text-red-600 hover:text-red-800 font-bold underline uppercase tracking-tighter">
+                                            Annuler la réservation
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+
+            {{-- Historique / Emprunts --}}
             <div class="bg-white border-t-4 border-amber-800 rounded-lg shadow-lg overflow-hidden border border-amber-200">
                 <div class="p-6">
                     <h3 class="text-xl font-bold text-amber-900 mb-6 underline decoration-amber-500">📚 Historique de mes lectures</h3>
@@ -54,27 +125,35 @@
                                             {{ $emprunt->exemplaire->livre->titre }}
                                         </td>
                                         <td class="p-4 text-gray-600">
-                                            {{ \Carbon\Carbon::parse($emprunt->date_emprunt)->format('d/m/Y') }}
+                                            {{ $emprunt->date_emprunt->format('d/m/Y') }}
                                         </td>
                                         <td class="p-4 text-center text-gray-600">
-                                            {{ \Carbon\Carbon::parse($emprunt->date_retour_prevue)->format('d/m/Y') }}
+                                            {{ $emprunt->date_retour_prevue->format('d/m/Y') }}
                                         </td>
                                         <td class="p-4 text-center">
-                                            @if($emprunt->date_retour_effectif)
-                                                <span class="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-bold border border-green-200 uppercase tracking-tighter">
-                                                    ✅ RENDU le {{ \Carbon\Carbon::parse($emprunt->date_retour_effectif)->format('d/m/Y') }}
+                                            @if($emprunt->date_retour)
+                                                <span class="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-bold border border-green-200">
+                                                    ✅ RENDU
                                                 </span>
                                             @else
                                                 <div class="flex flex-col items-center gap-2">
-                                                    <span class="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-[10px] font-bold border border-blue-200 shadow-sm animate-pulse tracking-tighter uppercase">
+                                                    <span class="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-[10px] font-bold border border-blue-200 shadow-sm animate-pulse">
                                                         ⏳ EN COURS
                                                     </span>
+
+                                                    {{-- Alerte si quelqu'un d'autre a réservé cet exemplaire --}}
+                                                    @if($emprunt->exemplaire->reserved_by_user_id)
+                                                        <div class="mt-1 flex flex-col items-center">
+                                                            <span class="bg-orange-500 text-white text-[9px] px-2 py-0.5 rounded font-bold animate-bounce shadow-md">
+                                                                ⚠️ ATTENDU PAR UN AUTRE ADHÉRENT
+                                                            </span>
+                                                        </div>
+                                                    @endif
                                                     
-                                                    {{-- FORMULAIRE DE RETOUR POUR L'USAGER --}}
-                                                    <form action="{{ route('emprunts.retourner', $emprunt->id) }}" method="POST" onsubmit="return confirm('Confirmez-vous avoir déposé le livre dans la boîte de retour ?')">
+                                                    <form action="{{ route('emprunts.retourner', $emprunt->id) }}" method="POST">
                                                         @csrf
                                                         @method('PATCH')
-                                                        <button type="submit" class="text-[9px] bg-amber-700 hover:bg-amber-900 text-white px-2 py-1 rounded transition uppercase font-sans font-bold shadow-sm">
+                                                        <button type="submit" class="mt-2 text-[9px] bg-amber-700 hover:bg-amber-900 text-white px-2 py-1 rounded transition uppercase font-bold shadow">
                                                             Rendre le livre
                                                         </button>
                                                     </form>
@@ -84,21 +163,13 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="p-10 text-center text-gray-400 italic bg-gray-50">
-                                            Aucun livre n'a encore été inscrit à votre nom dans nos registres.
-                                        </td>
+                                        <td colspan="4" class="p-10 text-center text-gray-400 italic bg-gray-50">Aucun livre enregistré.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
                 </div>
-            </div>
-
-            <div class="mt-8 text-center pb-10">
-                <a href="{{ route('catalogue') }}" class="text-amber-800 hover:text-amber-600 font-bold underline transition-colors">
-                    ← Retourner au catalogue pour emprunter un nouveau livre
-                </a>
             </div>
         </div>
     </div>

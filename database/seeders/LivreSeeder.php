@@ -4,53 +4,67 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Livre;
+use App\Models\Auteur;
+use App\Models\Categorie;
+use Illuminate\Support\Str;
 
 class LivreSeeder extends Seeder
 {
     public function run(): void
     {
-        $livres = [
-            // 💻 INFORMATIQUE
-            ['titre' => 'Laravel Up & Running', 'auteur' => 'Matt Stauffer', 'theme' => 'Informatique'],
-            ['titre' => 'Clean Code', 'auteur' => 'Robert C. Martin', 'theme' => 'Informatique'],
-            ['titre' => 'Refactoring', 'auteur' => 'Martin Fowler', 'theme' => 'Informatique'],
-            
-            // 📈 MANAGEMENT & PRODUCTIVITÉ
-            ['titre' => 'La 25ème Heure', 'auteur' => 'Guillaume Declair', 'theme' => 'Management'],
-            ['titre' => 'Deep Work', 'auteur' => 'Cal Newport', 'theme' => 'Management'],
-            ['titre' => 'Atomic Habits', 'auteur' => 'James Clear', 'theme' => 'Management'],
-            
-            // 📖 ROMAN & LITTÉRATURE
-            ['titre' => '1984', 'auteur' => 'George Orwell', 'theme' => 'Roman'],
-            ['titre' => 'Le Petit Prince', 'auteur' => 'Antoine de Saint-Exupéry', 'theme' => 'Roman'],
-            ['titre' => 'L\'Alchimiste', 'auteur' => 'Paulo Coelho', 'theme' => 'Roman'],
-            
-            // ⚖️ DROIT
-            ['titre' => 'Code Civil 2026', 'auteur' => 'Dalloz', 'theme' => 'Droit'],
-            ['titre' => 'Code du Travail 2026', 'auteur' => 'LexisNexis', 'theme' => 'Droit'],
-            
-            // 🚀 SCIENCE-FICTION
-            ['titre' => 'Fondation', 'auteur' => 'Isaac Asimov', 'theme' => 'SF'],
-            ['titre' => 'Dune', 'auteur' => 'Frank Herbert', 'theme' => 'SF'],
-            ['titre' => 'Le Meilleur des Mondes', 'auteur' => 'Aldous Huxley', 'theme' => 'SF'],
-            
-            // 🎨 ART & BD
-            ['titre' => 'Astérix : L\'Iris Blanc', 'auteur' => 'Fabcaro', 'theme' => 'BD'],
-            ['titre' => 'L\'Arabe du futur', 'auteur' => 'Riad Sattouf', 'theme' => 'BD'],
-            ['titre' => 'Histoire de l\'Art', 'auteur' => 'E.H. Gombrich', 'theme' => 'Art'],
-            
-            // 🧠 PSYCHOLOGIE & SCIENCES
-            ['titre' => 'Système 1 / Système 2', 'auteur' => 'Daniel Kahneman', 'theme' => 'Sciences'],
-            ['titre' => 'Sapiens', 'auteur' => 'Yuval Noah Harari', 'theme' => 'Sciences'],
-            ['titre' => 'Une brève histoire du temps', 'auteur' => 'Stephen Hawking', 'theme' => 'Sciences'],
+        // 1. Liste de livres "Originaux" et Tech (Fini 1984 et Le Petit Prince !)
+        $vraisLivres = [
+            // Développement & Tech
+            ['titre' => 'The Pragmatic Programmer', 'auteur' => 'Andrew Hunt', 'cat' => 'Développement Web'],
+            ['titre' => 'Refactoring', 'auteur' => 'Martin Fowler', 'cat' => 'Développement Web'],
+            ['titre' => "Don't Make Me Think", 'auteur' => 'Steve Krug', 'cat' => 'Développement Web'],
+            ['titre' => "Clean Architecture", 'auteur' => 'Robert C. Martin', 'cat' => 'Développement Web'],
+            ['titre' => "Design Patterns", 'auteur' => 'Erich Gamma', 'cat' => 'Développement Web'],
+
+            // Science-Fiction & Culture Geek (Plus original que Dune/1984)
+            ['titre' => 'Le Guide du voyageur galactique', 'auteur' => 'Douglas Adams', 'cat' => 'Science-Fiction'],
+            ['titre' => 'Neuromancien', 'auteur' => 'William Gibson', 'cat' => 'Science-Fiction'],
+            ['titre' => 'Ready Player One', 'auteur' => 'Ernest Cline', 'cat' => 'Science-Fiction'],
+            ['titre' => 'Snow Crash (Le Samouraï Virtuel)', 'auteur' => 'Neal Stephenson', 'cat' => 'Science-Fiction'],
+
+            // BD & Romans Graphiques
+            ['titre' => "L'Incal", 'auteur' => 'Moebius', 'cat' => 'Bande Dessinée'],
+            ['titre' => "Saga", 'auteur' => 'Brian K. Vaughan', 'cat' => 'Bande Dessinée'],
+            ['titre' => "Watchmen", 'auteur' => 'Alan Moore', 'cat' => 'Bande Dessinée'],
+
+            // Management & Carrière
+            ['titre' => "L'Art de la Victoire (Nike)", 'auteur' => 'Phil Knight', 'cat' => 'Management'],
+            ['titre' => "Deep Work", 'auteur' => 'Cal Newport', 'cat' => 'Management'],
+            ['titre' => "Soft Skills", 'auteur' => 'John Sonmez', 'cat' => 'Management'],
         ];
 
-        foreach ($livres as $livre) {
-            Livre::create(array_merge($livre, [
-                'isbn' => fake()->unique()->isbn13(),
-                'annee_publication' => rand(2015, 2025),
-                'disponible' => true
-            ]));
+        foreach ($vraisLivres as $data) {
+            $auteur = Auteur::firstOrCreate(['nom' => $data['auteur']]);
+            $categorie = Categorie::firstOrCreate(['nom' => $data['cat']]);
+
+            Livre::create([
+                'titre' => $data['titre'],
+                'auteur_id' => $auteur->id,
+                'categorie_id' => $categorie->id,
+            ]);
+        }
+
+        // 2. Génération automatique PROPRE (380 livres)
+        $faker = \Faker\Factory::create('fr_FR');
+        $categories = Categorie::all();
+        $auteurs = Auteur::all();
+
+        for ($i = 0; $i < 380; $i++) {
+            // AU LIEU DE realText (qui fait des phrases bizarres)
+            // ON UTILISE sentence() qui crée des suites de mots plus crédibles
+            $titre = $faker->unique()->sentence(rand(2, 4));
+            $titre = Str::title(str_replace('.', '', $titre)); // On nettoie le point final
+
+            Livre::create([
+                'titre' => $titre,
+                'auteur_id' => $auteurs->random()->id,
+                'categorie_id' => $categories->random()->id,
+            ]);
         }
     }
 }

@@ -4,10 +4,13 @@ namespace Database\Factories;
 
 use App\Models\Auteur;
 use App\Models\Categorie;
+use App\Models\Livre;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class LivreFactory extends Factory
 {
+    protected $model = Livre::class;
+
     public function definition(): array
     {
         // Tableaux pour générer des titres crédibles en français
@@ -32,9 +35,13 @@ class LivreFactory extends Factory
             // ucfirst pour mettre la première lettre en majuscule
             'titre' => ucfirst($titre), 
             
-            // On utilise inRandomOrder()->first() pour la performance
-            'auteur_id' => Auteur::inRandomOrder()->first()->id ?? Auteur::factory(),
+            // On force la création d'un NOUVEL auteur pour éviter de reprendre les "Anonymes"
+            'auteur_id' => Auteur::factory(),
+            
+            // On peut garder le hasard pour la catégorie ou en créer une nouvelle
             'categorie_id' => Categorie::inRandomOrder()->first()->id ?? Categorie::factory(),
+            
+            'isbn' => $this->faker->isbn13(),
         ];
     }
 }

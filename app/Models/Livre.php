@@ -28,10 +28,11 @@ class Livre extends Model
     }
 
     /**
-     * Relation : Un livre possède plusieurs exemplaires physiques
+     * ✅ SÉCURISATION : Utilisation du namespace absolu pour l'autoloader
+     * Un livre possède plusieurs exemplaires physiques
      */
     public function exemplaires()
     {
-        return $this->hasMany(Exemplaire::class);
+        return $this->hasMany(\App\Models\Exemplaire::class, 'livre_id');
     }
 }

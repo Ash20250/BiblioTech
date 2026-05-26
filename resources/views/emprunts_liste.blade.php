@@ -13,6 +13,24 @@
             </div>
         @endif
 
+        {{-- ✅ NOUVEAU : FILTRES DE STATUT ALIGNÉS SUR LE STYLE DU REGISTRE --}}
+        <div class="max-w-5xl mx-auto flex flex-wrap gap-3 font-serif">
+            <a href="{{ route('emprunts.index') }}" 
+               class="px-5 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all {{ !request('statut') ? 'bg-[#4A3728] text-white shadow-lg' : 'bg-white text-[#4A3728] border border-[#D2B48C] hover:bg-[#FDFBF7]' }}">
+                📄 Tous
+            </a>
+            
+            <a href="{{ route('emprunts.index', ['statut' => 'en_cours']) }}" 
+               class="px-5 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all {{ request('statut') === 'en_cours' ? 'bg-blue-700 text-white shadow-lg' : 'bg-white text-blue-700 border border-blue-200 hover:bg-blue-50' }}">
+                ⏳ En cours
+            </a>
+
+            <a href="{{ route('emprunts.index', ['statut' => 'en_retard']) }}" 
+               class="px-5 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all {{ request('statut') === 'en_retard' ? 'bg-red-700 text-white shadow-lg' : 'bg-white text-red-700 border border-red-200 hover:bg-red-50' }}">
+                🚨 Retards
+            </a>
+        </div>
+
         <div class="max-w-5xl mx-auto bg-[#FFFDF9] rounded-lg shadow-2xl border-2 border-[#D2B48C] overflow-hidden">
             <table class="w-full text-left border-collapse">
                 <thead>
@@ -27,10 +45,9 @@
                 <tbody class="text-[#5D4037] font-serif text-base">
                     @forelse($emprunts as $emprunt)
                         @php
-                            // 1. Calcul du retard
-                            $estEnRetard = $emprunt->created_at->diffInDays(now()) > 14;
+                            // Correction : On utilise la date_retour_prevue du modèle
+                            $estEnRetard = !$emprunt->date_retour && \Carbon\Carbon::parse($emprunt->date_retour_prevue)->isPast();
 
-                            // 2. Logique étendue des couleurs par thème (alignée sur le Seeder)
                             $couleurs = [
                                 'Informatique' => 'bg-blue-100 text-blue-800 border-blue-200',
                                 'Management'   => 'bg-purple-100 text-purple-800 border-purple-200',
@@ -41,35 +58,39 @@
                                 'Sciences'     => 'bg-teal-100 text-teal-800 border-teal-200',
                                 'Art'          => 'bg-pink-100 text-pink-800 border-pink-200',
                             ];
-                            $themeStyle = $couleurs[$emprunt->livre->theme] ?? 'bg-gray-100 text-gray-800 border-gray-200';
+                            $themeStyle = $couleurs[$emprunt->exemplaire->livre->theme ?? ''] ?? 'bg-gray-100 text-gray-800 border-gray-200';
                         @endphp
                         
                         <tr class="border-b border-[#F4F1EA] {{ $estEnRetard ? 'bg-red-50' : 'hover:bg-[#FDFBF7]' }} transition-colors">
                             <td class="p-5">
-                                <span class="font-bold text-[#4A3728]">{{ $emprunt->salarie->nom }}</span>
+                                <span class="font-bold text-[#4A3728]">{{ $emprunt->usager->name ?? 'Anonyme' }}</span>
                                 <span class="text-[10px] block text-[#795548] opacity-70 italic uppercase tracking-tighter">
-                                    {{ $emprunt->salarie->ville }}
+                                    {{ $emprunt->usager->email ?? '' }}
                                 </span>
                             </td>
 
                             <td class="p-5">
                                 <div class="flex flex-col items-start">
                                     <span class="px-2 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wider {{ $themeStyle }} mb-1">
-                                        {{ $emprunt->livre->theme ?? 'Divers' }}
+                                        {{ $emprunt->exemplaire->livre->theme ?? 'Divers' }}
                                     </span>
                                     <span class="italic text-[#795548] leading-tight">
-                                        {{ $emprunt->livre->titre }}
+                                        {{ $emprunt->exemplaire->livre->titre ?? 'Sans titre' }}
                                     </span>
                                 </div>
                             </td>
 
                             <td class="p-5 text-sm">
-                                {{ $emprunt->created_at->format('d/m/Y') }}
+                                {{ \Carbon\Carbon::parse($emprunt->date_emprunt)->format('d/m/Y') }}
                             </td>
 
                             <td class="p-5">
-                                @if($estEnRetard)
-                                    <span class="px-2 py-1 bg-red-600 text-white text-[10px] rounded-full font-bold uppercase shadow-sm">
+                                @if($emprunt->date_retour)
+                                    <span class="px-2 py-1 bg-green-100 text-green-800 text-[10px] rounded-full font-bold uppercase">
+                                        ✅ Rendu
+                                    </span>
+                                @elseif($estEnRetard)
+                                    <span class="px-2 py-1 bg-red-600 text-white text-[10px] rounded-full font-bold uppercase shadow-sm animate-pulse">
                                         ⚠️ RETARD
                                     </span>
                                 @else
@@ -80,22 +101,26 @@
                             </td>
 
                             <td class="p-5 text-center">
-                                <form action="{{ route('emprunt.retourner', $emprunt->id) }}" method="POST" onsubmit="return confirm('Confirmer le retour de ce livre en rayon ?')">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" 
-                                        class="bg-[#8B4513] hover:bg-green-700 text-[#F4F1EA] px-4 py-2 rounded-md font-bold text-[10px] uppercase tracking-widest shadow-md transition-all active:scale-95">
-                                        📥 Retour
-                                    </button>
-                                </form>
+                                @if(!$emprunt->date_retour)
+                                    <form action="{{ route('emprunts.retourner', $emprunt->id) }}" method="POST" onsubmit="return confirm('Confirmer le retour de ce livre en rayon ?')">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" 
+                                            class="bg-[#8B4513] hover:bg-green-700 text-[#F4F1EA] px-4 py-2 rounded-md font-bold text-[10px] uppercase tracking-widest shadow-md transition-all active:scale-95">
+                                            📥 Retour
+                                        </button>
+                                    </form>
+                                @else
+                                    <span class="text-gray-400 text-[10px] uppercase font-bold italic tracking-widest">Classé</span>
+                                @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
                             <td colspan="5" class="p-20 text-center italic text-[#795548]">
                                 <div class="text-5xl mb-4 opacity-30">📚</div>
-                                <p class="text-xl">Le registre est vide.</p>
-                                <p class="text-sm opacity-70">Tous les ouvrages sont actuellement disponibles.</p>
+                                <p class="text-xl">Aucun résultat trouvé.</p>
+                                <p class="text-sm opacity-70">Ajustez vos filtres pour voir les autres entrées.</p>
                             </td>
                         </tr>
                     @endforelse
@@ -104,9 +129,13 @@
         </div>
 
         <div class="text-center mt-8">
-            <a href="{{ route('emprunt.create') }}" class="inline-block px-8 py-3 bg-[#D2B48C] text-[#4A3728] rounded-full font-bold hover:bg-[#8B4513] hover:text-white transition-all shadow-lg transform hover:-translate-y-1">
+            <a href="{{ route('emprunt.create') }}" class="inline-block px-8 py-3 bg-[#D2B48C] text-[#4A3728] rounded-full font-bold hover:bg-[#8B4513] hover:text-white transition-all shadow-lg transform hover:-translate-y-1 no-underline">
                 + Enregistrer une nouvelle sortie
             </a>
+        </div>
+        
+        <div class="max-w-5xl mx-auto">
+            {{ $emprunts->links() }}
         </div>
     </div>
 </x-app-layout>

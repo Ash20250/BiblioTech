@@ -9,31 +9,38 @@ class Exemplaire extends Model
 {
     use HasFactory; 
 
-    // Les champs que l'on autorise à remplir via Exemplaire::create()
-    protected $fillable = ['mise_en_service', 'livre_id', 'statut_id'];
+    protected $fillable = [
+        'mise_en_service', 
+        'livre_id', 
+        'statut_id', 
+        'reserved_by_user_id'
+    ];
 
-    /**
-     * Relation : Un exemplaire appartient à un Livre
-     */
+    public function getIsReservedAttribute()
+    {
+        return $this->reserved_by_user_id !== null;
+    }
+
     public function livre()
     {
         return $this->belongsTo(Livre::class);
     }
 
-    /**
-     * Relation : Un exemplaire a un Statut (Ex: 1 pour Disponible)
-     */
     public function statut()
     {
         return $this->belongsTo(Statut::class);
     }
 
     /**
-     * Relation : Un exemplaire peut avoir plusieurs emprunts
-     * Utilisé dans le catalogue pour vérifier si le dernier emprunt est rendu.
+     * ✅ CORRECTION : Passage en chaîne de caractères pour contourner le bug de détection
      */
     public function emprunts()
     {
-        return $this->hasMany(Emprunt::class);
+        return $this->hasMany('App\Models\Emprunt');
+    }
+
+    public function reservataire()
+    {
+        return $this->belongsTo(User::class, 'reserved_by_user_id');
     }
 }

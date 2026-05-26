@@ -1,3 +1,25 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Customisation de la pagination Laravel (Bibliotech) */
+nav[role="navigation"] .relative.z-0 {
+    @apply inline-flex rounded-lg shadow-md border border-[#D2B48C] overflow-hidden;
+}
+
+/* Styles des boutons de chiffres et flèches */
+nav[role="navigation"] .relative.z-0 a, 
+nav[role="navigation"] .relative.z-0 span[aria-current="page"] span {
+    @apply bg-[#FFFDF9] text-[#4A3728] border-none font-serif px-4 py-2 transition-colors duration-200 !important;
+}
+
+/* Effet au survol des chiffres */
+nav[role="navigation"] .relative.z-0 a:hover {
+    @apply bg-[#F4F1EA] text-[#8B4513] !important;
+}
+
+/* Le chiffre de la page ACTIVE (Actuellement sélectionné) */
+nav[role="navigation"] .relative.z-0 span[aria-current="page"] span {
+    @apply bg-[#8B4513] text-[#F4F1EA] font-bold !important;
+}
+
+/* Cacher le texte "Showing X to Y of Z results" si tu veux épurer la vue */
+nav[role="navigation"] div:first-child p {
+    @apply text-[#795548] font-serif text-sm;
+}

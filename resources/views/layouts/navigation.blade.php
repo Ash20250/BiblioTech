@@ -21,19 +21,23 @@
                         {{ __('Catalogue') }}
                     </x-nav-link>
 
-                    <x-nav-link :href="route('salaries.index')" :active="request()->routeIs('salaries.index')" class="text-[#F4F1EA] hover:text-[#D2B48C] border-none uppercase text-[10px] tracking-widest font-bold">
-                        {{ __('Membres') }}
-                    </x-nav-link>
+                    {{-- ZONE ADMIN : Visible uniquement par le bibliothécaire --}}
+                    @if(Auth::user()->role === 'bibliothecaire')
+                        <x-nav-link :href="route('salaries.index')" :active="request()->routeIs('salaries.index')" class="text-[#F4F1EA] hover:text-[#D2B48C] border-none uppercase text-[10px] tracking-widest font-bold">
+                            {{ __('Membres') }}
+                        </x-nav-link>
 
-                    <a href="{{ route('emprunts.index') }}" class="bg-[#8B4513] hover:bg-[#A0522D] text-[#F4F1EA] px-4 py-2 rounded shadow-md uppercase text-[10px] tracking-widest font-bold transition-all transform active:scale-95 no-underline border-none">
-                        {{ __('Gestion des Emprunts') }}
-                    </a>
+                        <a href="{{ route('emprunts.index') }}" class="bg-[#8B4513] hover:bg-[#A0522D] text-[#F4F1EA] px-4 py-2 rounded shadow-md uppercase text-[10px] tracking-widest font-bold transition-all transform active:scale-95 no-underline border-none">
+                            {{ __('Gestion des Emprunts') }}
+                        </a>
+                    @endif
                 </div>
             </div>
 
             <div class="hidden sm:flex sm:items-center sm:ms-6 space-x-4">
                 <a href="{{ route('profile.edit') }}" class="text-[#D2B48C] text-[10px] font-bold uppercase tracking-widest border-r border-[#3D2B1E] pr-4 hover:text-[#F4F1EA] transition-colors">
-                    {{ Auth::user()->name }}
+                    {{ Auth::user()->name }} 
+                    <span class="ml-1 opacity-50">({{ Auth::user()->role }})</span>
                 </a>
 
                 <form method="POST" action="{{ route('logout') }}" class="m-0">
@@ -63,9 +67,13 @@
             <x-responsive-nav-link :href="route('catalogue')" :active="request()->routeIs('catalogue')" class="text-[#F4F1EA]">
                 {{ __('Catalogue') }}
             </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('emprunts.index')" :active="request()->routeIs('emprunts.index')" class="text-[#F4F1EA]">
-                {{ __('Gestion des Emprunts') }}
-            </x-responsive-nav-link>
+
+            @if(Auth::user()->role === 'bibliothecaire')
+                <x-responsive-nav-link :href="route('emprunts.index')" :active="request()->routeIs('emprunts.index')" class="text-[#F4F1EA]">
+                    {{ __('Gestion des Emprunts') }}
+                </x-responsive-nav-link>
+            @endif
+
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <x-responsive-nav-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();" class="text-red-400 font-bold">

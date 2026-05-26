@@ -19,7 +19,7 @@
             
             <div class="flex items-center gap-8">
                 @auth
-                    <a href="{{ route('profil.usager') }}" class="hover:text-[#D2B48C] transition text-sm no-underline font-serif font-bold">
+                    <a href="{{ route('profile.index') }}" class="hover:text-[#D2B48C] transition text-sm no-underline font-serif font-bold">
                         📜 Mon Profil
                     </a>
                 @endauth
@@ -31,28 +31,27 @@
 
             <div class="flex items-center gap-6 font-serif">
                 <a href="/" class="hover:text-[#D2B48C] transition text-sm no-underline">Accueil</a>
-                <a href="/catalogue" class="hover:text-[#D2B48C] transition text-sm no-underline">Catalogue</a>
+                <a href="{{ route('catalogue') }}" class="hover:text-[#D2B48C] transition text-sm no-underline">Catalogue</a>
                 
                 @auth
-                    {{-- RESTRICTION : SEUL L'ADMIN VOIT LE REGISTRE ET LE BOUTON EMPRUNT --}}
-                    @if(Auth::user()->email == 'ashdh@gmail.com')
-                        <a href="/emprunts" class="hover:text-[#D2B48C] transition text-sm no-underline">Registre</a>
+                    {{-- SÉCURITÉ : Vérification du rôle --}}
+                    @if(Auth::user()->role === 'bibliothecaire')
+                        <a href="{{ route('emprunts.index') }}" class="hover:text-[#D2B48C] transition text-sm no-underline">Registre</a>
 
                         <div class="flex items-center gap-3">
-                            <a href="/emprunts/nouveau" class="bg-[#8B4513] px-4 py-2 rounded shadow-inner hover:bg-[#5D4037] transition text-sm no-underline text-white">
+                            {{-- ✅ CORRECTION : Route corrigée en 'emprunts.create' au pluriel --}}
+                            <a href="{{ route('emprunts.create') }}" class="bg-[#8B4513] px-4 py-2 rounded shadow-inner hover:bg-[#5D4037] transition text-sm no-underline text-white">
                                 Nouvel Emprunt
                             </a>
-                    @endif
-
-                        <form method="POST" action="{{ route('logout') }}" class="inline ml-2">
-                            @csrf
-                            <button type="submit" class="text-[10px] uppercase tracking-widest opacity-60 hover:opacity-100 hover:text-red-400 transition bg-transparent border-none cursor-pointer p-0 font-sans">
-                                Quitter
-                            </button>
-                        </form>
-                    @if(Auth::user()->email == 'ashdh@gmail.com')
                         </div>
                     @endif
+
+                    <form method="POST" action="{{ route('logout') }}" class="inline ml-2">
+                        @csrf
+                        <button type="submit" class="text-[10px] uppercase tracking-widest opacity-60 hover:opacity-100 hover:text-red-400 transition bg-transparent border-none cursor-pointer p-0 font-sans">
+                            Quitter
+                        </button>
+                    </form>
                 @endauth
             </div>
         </div>
