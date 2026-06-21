@@ -28,7 +28,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        // MODIFICATION : Redirection vers l'accueil au lieu du dashboard
+        // Redirection forcée vers l'accueil ('/') après connexion
         return redirect()->intended(url('/'));
     }
 
@@ -43,6 +43,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerateToken();
 
+        // Redirection vers l'accueil après déconnexion
         return redirect('/');
     }
 }

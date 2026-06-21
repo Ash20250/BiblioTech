@@ -18,7 +18,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role', // Ajouté ici pour ta gestion d'admin/usager
+        'role', // Géré par ton DatabaseSeeder
     ];
 
     /**
@@ -41,18 +41,24 @@ class User extends Authenticatable
     }
 
     /**
+     * AJOUT : Accesseur pour vérifier si l'utilisateur est admin.
+     * Permet d'utiliser @if(Auth::user()->is_admin) dans les vues Blade.
+     */
+    public function getIsAdminAttribute(): bool
+    {
+        return $this->role === 'bibliothecaire';
+    }
+
+    /**
      * RELATION : Les livres favoris de l'utilisateur.
-     * C'est une relation "Plusieurs-à-Plusieurs" (Many-to-Many)
      */
     public function favoris()
     {
-        // On lie User à Livre via la table pivot 'favoris'
         return $this->belongsToMany(Livre::class, 'favoris')->withTimestamps();
     }
 
     /**
-     * ✅ AJOUT : Relation inverse pour la gestion des prêts
-     * Un usager (Client) peut avoir plusieurs fiches d'emprunts historiques ou en cours
+     * RELATION : Les fiches d'emprunts de l'utilisateur.
      */
     public function emprunts()
     {

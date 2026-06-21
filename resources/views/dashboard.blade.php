@@ -9,33 +9,14 @@
                 <p class="text-[#765C48] mt-4 italic text-lg">Bienvenue, Maître des Livres {{ Auth::user()->name }}</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="flex justify-center">
                 
-                <a href="/catalogue" class="relative bg-[#FFFDF9] p-8 rounded-lg shadow-md border-2 border-[#D2B48C] hover:shadow-2xl hover:border-[#8B4513] transition-all group overflow-hidden">
-                    <div class="absolute top-0 right-0 w-16 h-16 bg-[#D2B48C] opacity-10 group-hover:opacity-20 rounded-bl-full transition-opacity"></div>
-                    <div class="text-4xl mb-4">📖</div>
-                    <h4 class="text-2xl font-bold text-[#5D4037] mb-3">Le Catalogue</h4>
-                    <p class="text-[#795548] leading-relaxed italic">Feuilleter l'inventaire complet des ouvrages et la liste des membres.</p>
-                    <div class="mt-8 flex items-center text-[#8B4513] font-bold uppercase text-xs tracking-widest">
+                <a href="/catalogue" class="w-full md:w-1/2 bg-[#FFFDF9] p-8 rounded-lg shadow-md border-2 border-[#D2B48C] hover:shadow-2xl hover:border-[#8B4513] transition-all group overflow-hidden">
+                    <div class="text-4xl mb-4 text-center">📖</div>
+                    <h4 class="text-2xl font-bold text-[#5D4037] mb-3 text-center">Le Catalogue</h4>
+                    <p class="text-[#795548] leading-relaxed italic text-center">Feuilleter l'inventaire complet des ouvrages et la liste des membres.</p>
+                    <div class="mt-8 flex justify-center items-center text-[#8B4513] font-bold uppercase text-xs tracking-widest">
                         Ouvrir le registre <span class="ml-2 group-hover:translate-x-2 transition-transform">↣</span>
-                    </div>
-                </a>
-
-                <a href="/emprunt" class="relative bg-[#FFFDF9] p-8 rounded-lg shadow-md border-2 border-[#D2B48C] hover:shadow-2xl hover:border-[#2E7D32] transition-all group">
-                    <div class="text-4xl mb-4">✒️</div>
-                    <h4 class="text-2xl font-bold text-[#5D4037] mb-3">Nouvel Emprunt</h4>
-                    <p class="text-[#795548] leading-relaxed italic">Inscrire un nouveau prêt dans le grand livre de la bibliothèque.</p>
-                    <div class="mt-8 flex items-center text-[#2E7D32] font-bold uppercase text-xs tracking-widest">
-                        Rédiger une fiche <span class="ml-2 group-hover:translate-x-2 transition-transform">↣</span>
-                    </div>
-                </a>
-
-                <a href="#" class="relative bg-[#FFFDF9] p-8 rounded-lg shadow-md border-2 border-[#D2B48C] hover:shadow-2xl hover:border-[#546E7A] transition-all group">
-                    <div class="text-4xl mb-4">📜</div>
-                    <h4 class="text-2xl font-bold text-[#5D4037] mb-3">Administration</h4>
-                    <p class="text-[#795548] leading-relaxed italic">Gérer vos informations personnelles et vos accès de bibliothécaire.</p>
-                    <div class="mt-8 flex items-center text-[#546E7A] font-bold uppercase text-xs tracking-widest">
-                        Modifier le profil <span class="ml-2 group-hover:translate-x-2 transition-transform">↣</span>
                     </div>
                 </a>
 

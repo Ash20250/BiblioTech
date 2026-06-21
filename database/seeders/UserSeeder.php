@@ -3,19 +3,27 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
-    public function run(): void
+    public function run()
     {
-        User::create([
-            'name' => 'Admin',
-            'email' => 'admin@test.com',
+        // Création de l'administrateur
+        DB::table('users')->insert([
+            'name' => 'Administrateur',
+            'email' => 'admin@bibliotech.fr',
             'password' => Hash::make('password'),
+            'is_admin' => 1,
         ]);
 
-        User::factory()->count(10)->create();
+        // Création de l'adhérent
+        DB::table('users')->insert([
+            'name' => 'Adhérent Lambda',
+            'email' => 'user@bibliotech.fr',
+            'password' => Hash::make('password'),
+            'is_admin' => 0,
+        ]);
     }
 }
