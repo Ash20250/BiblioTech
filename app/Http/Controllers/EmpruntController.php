@@ -17,10 +17,10 @@ class EmpruntController extends Controller
 
         if ($request->filled('statut')) {
             if ($request->statut === 'en_cours') {
-                $query->whereNull('date_retour');
+                $query->whereNull('date_retour_effectif');
             } 
             elseif ($request->statut === 'en_retard') {
-                $query->whereNull('date_retour')
+                $query->whereNull('date_retour_effectif')
                       ->where('date_retour_prevue', '<', now());
             }
         }
@@ -38,12 +38,13 @@ class EmpruntController extends Controller
 
     public function create()
     {
-        $users = User::where('role', 'CLIENT')->get();
+        // Extraction avec 'usager' en minuscule pour correspondre à ta table MySQL
+        $users = User::where('role', 'usager')->get();
 
-        // ✅ APPEL SÉCURISÉ
+        // Récupère les exemplaires qui n'ont pas d'emprunt en cours
         $exemplaires = \App\Models\Exemplaire::with('livre')
             ->whereDoesntHave('emprunts', function ($query) {
-                $query->whereNull('date_retour');
+                $query->whereNull('date_retour_effectif');
             })->get();
 
         return view('emprunts.create', compact('users', 'exemplaires'));
@@ -67,7 +68,7 @@ class EmpruntController extends Controller
         }
 
         $nbEmpruntsActuels = Emprunt::where('usager_id', $request->usager_id)
-            ->whereNull('date_retour')
+            ->whereNull('date_retour_effectif')
             ->count();
 
         if ($nbEmpruntsActuels >= 5) {
@@ -81,7 +82,7 @@ class EmpruntController extends Controller
             'exemplaire_id'      => $request->exemplaire_id,
             'date_emprunt'       => $request->date_emprunt,
             'date_retour_prevue' => $request->date_retour_prevue,
-            'date_retour'        => null, 
+            'date_retour_effectif' => null, 
         ]);
 
         $exemplaire->update(['reserved_by_user_id' => null]);
@@ -94,7 +95,7 @@ class EmpruntController extends Controller
         $user = auth()->user();
 
         $nbEmpruntsActuels = Emprunt::where('usager_id', $user->id)
-            ->whereNull('date_retour')
+            ->whereNull('date_retour_effectif')
             ->count();
 
         if ($nbEmpruntsActuels >= 5) {
@@ -107,7 +108,7 @@ class EmpruntController extends Controller
                       ->orWhere('reserved_by_user_id', $user->id);
             })
             ->whereDoesntHave('emprunts', function($q) {
-                $q->whereNull('date_retour');
+                $q->whereNull('date_retour_effectif');
             })->first();
 
         if (!$exemplaire) {
@@ -119,7 +120,7 @@ class EmpruntController extends Controller
             'exemplaire_id'      => $exemplaire->id,
             'date_emprunt'       => now(),
             'date_retour_prevue' => now()->addDays(30),
-            'date_retour'        => null,
+            'date_retour_effectif' => null,
         ]);
 
         $exemplaire->update(['reserved_by_user_id' => null]);
@@ -158,7 +159,7 @@ class EmpruntController extends Controller
         $emprunt = Emprunt::findOrFail($id);
         
         $emprunt->update([
-            'date_retour' => now()
+            'date_retour_effectif' => now()
         ]);
 
         $emprunt->exemplaire->update([

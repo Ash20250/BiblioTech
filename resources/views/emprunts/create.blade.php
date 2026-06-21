@@ -33,7 +33,7 @@
                 <form action="{{ route('emprunts.store') }}" method="POST" class="space-y-6 font-serif text-[#5D4037]">
                     @csrf
 
-                    {{-- 1. Sélection de l'Emprunteur (Usager) --}}
+                    {{-- 1. Sélection de l'Emprunteur (Usager) sans l'adresse email --}}
                     <div>
                         <label for="usager_id" class="block text-sm font-bold uppercase tracking-wider mb-2">
                             👤 Sélectionner l'Emprunteur (Client)
@@ -42,7 +42,7 @@
                             <option value="">-- Choisir un usager --</option>
                             @foreach($users as $user)
                                 <option value="{{ $user->id }}" {{ old('usager_id') == $user->id ? 'selected' : '' }}>
-                                    {{ $user->name }} ({{ $user->email }})
+                                    {{ $user->name }}
                                 </option>
                             @endforeach
                         </select>
@@ -51,7 +51,7 @@
                         @enderror
                     </div>
 
-                    {{-- 2. Sélection de l'Exemplaire Disponible --}}
+                    {{-- 2. Sélection de l'Exemplaire Disponible sans le Code N/A --}}
                     <div>
                         <label for="exemplaire_id" class="block text-sm font-bold uppercase tracking-wider mb-2">
                             📖 Sélectionner l'Exemplaire Disponible
@@ -60,11 +60,11 @@
                             <option value="">-- Choisir un exemplaire de livre libre --</option>
                             @foreach($exemplaires as $exemplaire)
                                 <option value="{{ $exemplaire->id }}" {{ old('exemplaire_id') == $exemplaire->id ? 'selected' : '' }}>
-                                    N° {{ $exemplaire->id }} - "{{ $exemplaire->livre->titre ?? 'Livre inconnu' }}" (Code : {{ $exemplaire->livre->isbn ?? 'N/A' }})
+                                    N° {{ $exemplaire->id }} - "{{ $exemplaire->livre->titre ?? 'Livre inconnu' }}"
                                 </option>
                             @endforeach
                         </select>
-                        @error('exemplaires_id')
+                        @error('exemplaire_id')
                             <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
                         @enderror
                     </div>

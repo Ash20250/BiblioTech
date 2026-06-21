@@ -18,8 +18,8 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // --- NETTOYAGE COMPATIBLE SQLITE ---
-        DB::statement('PRAGMA foreign_keys = OFF;');
+        // --- NETTOYAGE COMPATIBLE MYSQL ---
+        DB::statement('SET FOREIGN_KEY_CHECKS = 0;');
         Emprunt::query()->delete();
         Exemplaire::query()->delete();
         Livre::query()->delete();
@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
         Categorie::query()->delete();
         Auteur::query()->delete();
         User::query()->delete();
-        DB::statement('PRAGMA foreign_keys = ON;');
+        DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
 
         // --- 1. CRÉATION DES STATUTS ---
         $statutsRefs = ['Neuf', 'Excellent', 'Bon', 'Moyen', 'Abîmé'];
@@ -47,7 +47,7 @@ class DatabaseSeeder extends Seeder
             Auteur::create(['nom' => $nom]);
         }
 
-        // ICI : On utilise la Factory pour créer 40 VRAIS noms au lieu des "Anonymes"
+        // Utilisation de la Factory pour créer 40 VRAIS noms au lieu des "Anonymes"
         Auteur::factory(40)->create();
 
         // --- 4. CRÉATION DES UTILISATEURS ---
@@ -73,8 +73,8 @@ class DatabaseSeeder extends Seeder
                 'role' => 'usager',
             ]);
         }
-
-        // --- 5. GÉNÉRATEUR DE 400 TITRES ---
+        
+// --- 5. GÉNÉRATEUR DE TITRES UNIQUES ---
         $sujets = ['Laravel', 'Docker', 'React', 'Python', 'Intelligence', 'Robot', 'Lune', 'Soleil', 'Ocean', 'Montagne', 'Forêt', 'Code', 'Algorithme', 'Cyber', 'Data', 'Web', 'Mobile', 'Nuage', 'Système', 'Réseau'];
         $noms = ['Secret', 'Mystère', 'Enquête', 'Destin', 'Voyage', 'Ombre', 'Lumière', 'Silence', 'Cri', 'Appel', 'Rêve', 'Réalité', 'Passé', 'Futur', 'Monde', 'Univers', 'Atome', 'Énergie', 'Force', 'Esprit'];
 
@@ -82,17 +82,25 @@ class DatabaseSeeder extends Seeder
         $allCats = Categorie::all();
         $titresGeneres = [];
 
+        // Étape A : On génère toutes les combinaisons possibles à l'avance
         foreach ($sujets as $s) {
             foreach ($noms as $n) {
                 $titresGeneres[] = "$n de $s";
                 $titresGeneres[] = "$s : $n";
             }
         }
+        
+        // Étape B : On élimine les doublons potentiels de la liste et on mélange
+        $titresGeneres = array_unique($titresGeneres);
         shuffle($titresGeneres);
 
-        for ($i = 0; $i < 400; $i++) {
+        // Étape C : On s'assure de ne pas demander plus de titres que ce qu'on a de dispo
+        $totalLivresA_Creer = min(400, count($titresGeneres));
+
+        for ($i = 0; $i < $totalLivresA_Creer; $i++) {
             Livre::create([
-                'titre' => $titresGeneres[$i],
+                // array_shift retire le premier titre de la liste : il ne pourra plus JAMAIS être réutilisé
+                'titre' => array_shift($titresGeneres), 
                 'auteur_id' => $allAuteurs->random()->id,
                 'categorie_id' => $allCats->random()->id,
             ]);

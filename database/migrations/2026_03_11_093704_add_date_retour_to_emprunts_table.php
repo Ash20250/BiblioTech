@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('emprunts', function (Blueprint $table) {
-            // On ajoute la colonne. nullable() est crucial car 
-            // au moment de l'emprunt, la date de retour est inconnue.
-            $table->timestamp('date_retour')->nullable()->after('livre_id');
+            // On a enlevé ->after('livre_id') pour éviter l'erreur de colonne inconnue.
+            // La colonne se mettra simplement à la fin de la table.
+            $table->timestamp('date_retour')->nullable();
         });
     }
 
