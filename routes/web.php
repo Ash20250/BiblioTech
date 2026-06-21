@@ -29,7 +29,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/favoris/{livre}/toggle', [FavoriController::class, 'toggle'])->name('favoris.toggle');
 
     // --- PROFIL ADHÉRENT ---
-    // Nommé 'profile.index' pour correspondre aux redirections 'redirect()->route('profile.index')' du Controller
     Route::get('/mon-profil', [ProfilController::class, 'index'])->name('profile.index');
 
     // --- TABLEAU DE BORD ---
@@ -45,17 +44,17 @@ Route::middleware('auth')->group(function () {
     Route::match(['put', 'patch', 'post'], '/livres/{id}', [LivreController::class, 'update'])->name('livres.update');
     Route::delete('/livres/{id}', [LivreController::class, 'destroy'])->name('livres.destroy');
 
-    // --- 📜 GESTION DES EMPRUNTS (CORRIGÉE AU PLURIEL) ---
+    // --- 📜 GESTION DES EMPRUNTS ---
     Route::get('/emprunts', [EmpruntController::class, 'index'])->name('emprunts.index');
-    Route::get('/emprunts/nouveau', [EmpruntController::class, 'create'])->name('emprunts.create'); // Corrigé : emprunts.create
-    Route::post('/emprunts', [EmpruntController::class, 'store'])->name('emprunts.store');   // Corrigé : emprunts.store
+    Route::get('/emprunts/nouveau', [EmpruntController::class, 'create'])->name('emprunts.create');
+    Route::post('/emprunts', [EmpruntController::class, 'store'])->name('emprunts.store');
     Route::patch('/emprunts/{id}/retourner', [EmpruntController::class, 'retourner'])->name('emprunts.retourner');
 
-    // EMPRUNT DIRECT PAR L'USAGER (Depuis le catalogue)
-    Route::post('/emprunter/{livre}', [EmpruntController::class, 'emprunterParUsager'])->name('emprunter.livre');
+    // --- EMPRUNT ET RÉSERVATION (Pointant vers LivreController selon notre logique) ---
+    Route::post('/emprunter/{id}', [LivreController::class, 'emprunter'])->name('emprunter.livre');
+    Route::post('/reserver/{id}', [LivreController::class, 'reserver'])->name('reserver.exemplaire');
 
-    // ✅ RÉSERVATION & ANNULATION (Gestion du stock réservé)
-    Route::post('/reserver/{exemplaire}', [EmpruntController::class, 'reserver'])->name('reserver.exemplaire');
+    // Route pour annuler (laissée dans EmpruntController si tu préfères garder la logique là)
     Route::post('/reservation/annuler/{exemplaire}', [EmpruntController::class, 'annulerReservation'])->name('reservation.annuler');
 
     // --- GESTION DES SALARIÉS ---

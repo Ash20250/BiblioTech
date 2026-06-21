@@ -29,7 +29,7 @@ class DatabaseSeeder extends Seeder
         User::query()->delete();
         DB::statement('SET FOREIGN_KEY_CHECKS = 1;');
 
-        // --- 1. CRÉATION DES DONNÉES DE BASE ---
+        // --- 1. DONNÉES DE BASE ---
         $statutsRefs = ['Neuf', 'Excellent', 'Bon', 'Moyen', 'Abîmé'];
         foreach ($statutsRefs as $s) { Statut::create(['statut' => $s]); }
 
@@ -42,7 +42,7 @@ class DatabaseSeeder extends Seeder
 
         User::create(['name' => 'Admin Biblio', 'email' => 'admin@test.com', 'password' => Hash::make('password'), 'role' => 'bibliothecaire']);
 
-        // --- 5. LES 100 LIVRES FIXES ---
+        // --- 2. LIVRES ---
         $titres = [
             'Les Misérables', 'Germinal', 'Le Tour du monde en 80 jours', 'L\'Étranger', 'Le Deuxième Sexe',
             'Bonjour Tristesse', 'Le Bourgeois Gentilhomme', 'Fondation', '1984', 'Le Meilleur des mondes',
@@ -74,14 +74,17 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        // --- 6. EXEMPLAIRES ---
+        // --- 3. EXEMPLAIRES ALÉATOIRES (1 à 3) ---
         $statuts = Statut::all();
         foreach (Livre::all() as $livre) {
-            Exemplaire::create([
-                'livre_id' => $livre->id,
-                'statut_id' => $statuts->random()->id,
-                'mise_en_service' => Carbon::now()->subDays(rand(10, 100)),
-            ]);
+            $nbExemplaires = rand(1, 3);
+            for ($i = 0; $i < $nbExemplaires; $i++) {
+                Exemplaire::create([
+                    'livre_id' => $livre->id,
+                    'statut_id' => $statuts->random()->id,
+                    'mise_en_service' => Carbon::now()->subDays(rand(10, 100)),
+                ]);
+            }
         }
-    }
-}
+    } // Ceci ferme la fonction run()
+} // Ceci ferme la classe DatabaseSeeder
