@@ -22,7 +22,7 @@ Bienvenue sur le projet **BiblioTech**, une application de gestion de bibliothè
 | Rôle | Email | Mot de passe |
 | :--- | :--- | :--- |
 | **Administrateur** | `admin@test.com` | `password` |
-| **Utilisateur** | `test@gmail.com | `password` |
+| **Utilisateur** | `test@gmail.com` | `password` |
 
 ---
 *Développé dans le cadre du cursus BTS SIO.*
