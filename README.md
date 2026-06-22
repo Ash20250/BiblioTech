@@ -10,11 +10,16 @@ Bienvenue sur le projet **BiblioTech**, une application de gestion de bibliothè
 - Interface d'administration pour les bibliothécaires.
 
 ## 🚀 Installation
+## 🚀 Installation
 1. Cloner le projet : `git clone https://github.com/Ash20250/BiblioTech.git`
 2. Installer les dépendances : `composer install`
 3. Configurer l'environnement : `cp .env.example .env` puis modifier les accès BDD.
 4. Générer la clé : `php artisan key:generate`
-5. Migrer la base de données : `php artisan migrate`
+5. Initier la base de données :
+   ```bash
+   touch database/database.sqlite
+   php artisan migrate --force
+   php artisan db:seed --force
 6. Lancer le serveur : `php artisan serve`
 
 ## 🔑 Comptes de test
