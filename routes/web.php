@@ -48,13 +48,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/emprunts', [EmpruntController::class, 'index'])->name('emprunts.index');
     Route::get('/emprunts/nouveau', [EmpruntController::class, 'create'])->name('emprunts.create');
     Route::post('/emprunts', [EmpruntController::class, 'store'])->name('emprunts.store');
-    Route::patch('/emprunts/{id}/retourner', [EmpruntController::class, 'retourner'])->name('emprunts.retourner');
+    
+    // CORRIGÉ : Route pointant désormais vers LivreController@rendre
+    Route::patch('/emprunts/{id}/retourner', [LivreController::class, 'rendre'])->name('emprunts.retourner');
 
-    // --- EMPRUNT ET RÉSERVATION (Pointant vers LivreController selon notre logique) ---
+    // --- EMPRUNT ET RÉSERVATION ---
     Route::post('/emprunter/{id}', [LivreController::class, 'emprunter'])->name('emprunter.livre');
     Route::post('/reserver/{id}', [LivreController::class, 'reserver'])->name('reserver.exemplaire');
 
-    // Route pour annuler (laissée dans EmpruntController si tu préfères garder la logique là)
     Route::post('/reservation/annuler/{exemplaire}', [EmpruntController::class, 'annulerReservation'])->name('reservation.annuler');
 
     // --- GESTION DES SALARIÉS ---

@@ -109,7 +109,7 @@ class LivreController extends Controller
     /**
      * Action pour Emprunter un livre
      */
-public function emprunter($id)
+    public function emprunter($id)
     {
         $livre = Livre::findOrFail($id);
         
@@ -125,15 +125,37 @@ public function emprunter($id)
         }
 
         Emprunt::create([
-            'user_id' => Auth::id(),
+            'usager_id' => Auth::id(), 
             'exemplaire_id' => $exemplaire->id,
             'date_emprunt' => Carbon::now(),
+            'date_retour_prevue' => Carbon::now()->addDays(30), 
         ]);
 
         $exemplaire->update(['statut_id' => 2]); 
 
         return back()->with('success', 'Le livre "' . $livre->titre . '" a été emprunté.');
-    } // <-- Accolade de fermeture de la méthode emprunter
+    }
+
+    /**
+     * Action pour Rendre un livre (AJOUTÉE)
+     */
+public function rendre($emprunt_id)
+{
+    $emprunt = Emprunt::findOrFail($emprunt_id);
+
+    // DÉBOGAGE : Si ce message s'affiche après avoir cliqué, le problème est dans les lignes ci-dessous
+    // Si ce message ne s'affiche pas, le problème est dans la route ou le formulaire (Blade)
+    // dd($emprunt->exemplaire_id); 
+
+    $emprunt->update(['date_retour' => \Carbon\Carbon::now()]);
+
+    // Vérifiez ici que la relation exemplaire existe et est bien chargée
+    if ($emprunt->exemplaire) {
+        $emprunt->exemplaire->update(['statut_id' => 1]);
+    }
+
+    return back()->with('success', 'Livre retourné !');
+}
 
     public function reserver($exemplaire_id)
     {
@@ -148,6 +170,5 @@ public function emprunter($id)
         ]);
 
         return back()->with('success', 'Réservation effectuée avec succès !');
-    } // <-- Accolade de fermeture de la méthode reserver
-
-} // <-- CETTE ACCOLADE EST OBLIGATOIRE : elle ferme la classe LivreController
+    }
+}
