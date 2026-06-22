@@ -41,7 +41,7 @@
         </div>
 
         <footer class="mt-12 text-[#8B4513] text-xs font-serif opacity-70 italic">
-            — Projet BTS Blanc · Gestion de Bibliothèque © 2026 —
+            — BiblioTech · Gestion de Bibliothèque © 2026 —
         </footer>
     </div>
 </x-app-layout>

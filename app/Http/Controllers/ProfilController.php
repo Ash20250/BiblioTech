@@ -2,47 +2,65 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Emprunt;
 use App\Models\Exemplaire;
+use App\Models\Favori;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 
 class ProfilController extends Controller
 {
-    public function index()
+    /**
+     * Affiche l'espace personnel.
+     */
+    public function index(): View
     {
-        // 1. On récupère l'utilisateur connecté
         $user = Auth::user();
 
-        // 2. Récupération des emprunts (Eager Loading pour la performance)
         $emprunts = Emprunt::where('usager_id', $user->id)
-            ->with(['exemplaire.livre'])
+            ->with(['exemplaire.livre.auteur'])
             ->orderBy('date_emprunt', 'desc')
             ->get();
 
-        // 3. RÉCUPÉRATION DES FAVORIS
-        $favoris = $user->favoris()
-            ->with(['auteur', 'categorie'])
+        $nbLivresEnCours = $emprunts->whereNull('date_retour')->count();
+
+        $favoris = Favori::where('user_id', $user->id)
+            ->with(['livre.auteur', 'livre.categorie'])
             ->get();
 
-        // 4. RÉCUPÉRATION DES RÉSERVATIONS
-        // Basé uniquement sur la colonne reserved_by_user_id
         $reservations = Exemplaire::where('reserved_by_user_id', $user->id)
-            ->with(['livre.auteur']) 
+            ->with(['livre.auteur'])
             ->get();
 
-        // 5. Calcul du nombre d'emprunts actifs
-        // ATTENTION : Vérifie si ta colonne s'appelle 'date_retour' ou 'date_retour_effectif'
-        // Dans ton EmpruntController, tu utilises 'date_retour', donc je l'accorde ici :
-        $nbLivresEnCours = $emprunts->where('date_retour', null)->count();
+        return view('profil', compact('user', 'emprunts', 'nbLivresEnCours', 'favoris', 'reservations'));
+    }
 
-        // 6. On envoie tout à la vue profil.blade.php
-        return view('profil', [
-            'user' => $user,
-            'emprunts' => $emprunts,
-            'nbLivresEnCours' => $nbLivresEnCours,
-            'favoris' => $favoris,
-            'reservations' => $reservations
-        ]);
+    /**
+     * Annule une réservation d'exemplaire.
+     */
+    public function annulerReservation($id)
+    {
+        $exemplaire = Exemplaire::where('id', $id)
+            ->where('reserved_by_user_id', Auth::id())
+            ->firstOrFail();
+
+        $exemplaire->update(['reserved_by_user_id' => null]);
+
+        return back()->with('success', 'Réservation annulée.');
+    }
+
+    /**
+     * Enregistre le retour d'un emprunt.
+     */
+    public function retourner($id)
+    {
+        $emprunt = Emprunt::where('id', $id)
+            ->where('usager_id', Auth::id())
+            ->firstOrFail();
+
+        $emprunt->update(['date_retour' => now()]);
+
+        return back()->with('success', 'Livre rendu avec succès.');
     }
 }

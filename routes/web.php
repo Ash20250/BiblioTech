@@ -1,72 +1,59 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\CampusController;
-use App\Http\Controllers\SalarieController;
-use App\Http\Controllers\EmpruntController;
-use App\Http\Controllers\ProfilController; 
-use App\Http\Controllers\LivreController;
-use App\Http\Controllers\FavoriController;
-
-/*
-|--------------------------------------------------------------------------
-| Web Routes - BiblioTech
-|--------------------------------------------------------------------------
-*/
+use App\Http\Controllers\{
+    SalarieController, 
+    EmpruntController, 
+    ProfilController, 
+    LivreController, 
+    FavoriController, 
+    RegistreController
+};
 
 // --- PAGES PUBLIQUES ---
-Route::get('/', function () {
-    return view('welcome');
-});
-
+Route::get('/', function () { return view('welcome'); });
 Route::get('/catalogue', [LivreController::class, 'index'])->name('catalogue');
-Route::redirect('/emprunt', '/emprunts');
 
-// --- ZONE SÉCURISÉE (Connexion obligatoire) ---
+// --- ZONE SÉCURISÉE ---
 Route::middleware('auth')->group(function () {
     
-    // ✅ GESTION DES FAVORIS
-    Route::post('/favoris/{livre}/toggle', [FavoriController::class, 'toggle'])->name('favoris.toggle');
-
-    // --- PROFIL ADHÉRENT ---
+    Route::get('/dashboard', function () { return view('dashboard'); })->name('dashboard');
     Route::get('/mon-profil', [ProfilController::class, 'index'])->name('profile.index');
-
-    // --- TABLEAU DE BORD ---
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
-
-    // --- GESTION DES LIVRES (CRUD) ---
-    Route::get('/livres/nouveau', [LivreController::class, 'create'])->name('livres.create');
-    Route::post('/livres', [LivreController::class, 'store'])->name('livres.store');
-    Route::get('/livres/{id}/modifier', [LivreController::class, 'edit'])->name('livres.edit');
     
-    Route::match(['put', 'patch', 'post'], '/livres/{id}', [LivreController::class, 'update'])->name('livres.update');
-    Route::delete('/livres/{id}', [LivreController::class, 'destroy'])->name('livres.destroy');
+    // --- GESTION DES FAVORIS ---
+    Route::post('/favoris/{id}/toggle', [LivreController::class, 'toggleFavorite'])->name('livres.toggle-favorite');
+    Route::delete('/favoris/{id}', [FavoriController::class, 'destroy'])->name('favoris.destroy');
+
+    // --- GESTION DES RÉSERVATIONS ---
+    Route::delete('/reservations/{id}', [ProfilController::class, 'annulerReservation'])->name('reservations.destroy');
+
+    Route::get('/registre', [RegistreController::class, 'index'])->name('registre.index');
+
+    // --- GESTION DES LIVRES ---
+    Route::prefix('livres')->name('livres.')->group(function () {
+        Route::get('/nouveau', [LivreController::class, 'create'])->name('create');
+        Route::post('/', [LivreController::class, 'store'])->name('store');
+        Route::get('/{id}/modifier', [LivreController::class, 'edit'])->name('edit');
+        Route::match(['put', 'patch', 'post'], '/{id}', [LivreController::class, 'update'])->name('update');
+        Route::delete('/{id}', [LivreController::class, 'destroy'])->name('destroy');
+    });
 
     // --- 📜 GESTION DES EMPRUNTS ---
-    Route::get('/emprunts', [EmpruntController::class, 'index'])->name('emprunts.index');
-    Route::get('/emprunts/nouveau', [EmpruntController::class, 'create'])->name('emprunts.create');
-    Route::post('/emprunts', [EmpruntController::class, 'store'])->name('emprunts.store');
-    
-    // CORRIGÉ : Route pointant désormais vers LivreController@rendre
-    Route::patch('/emprunts/{id}/retourner', [LivreController::class, 'rendre'])->name('emprunts.retourner');
+    Route::prefix('emprunts')->name('emprunts.')->group(function () {
+        Route::get('/', [EmpruntController::class, 'index'])->name('index');
+        Route::get('/nouveau', [EmpruntController::class, 'create'])->name('create');
+        Route::post('/', [EmpruntController::class, 'store'])->name('store');
+        
+        // Redirigé vers ProfilController comme convenu
+        Route::patch('/{id}/retourner', [ProfilController::class, 'retourner'])->name('retourner');
+    });
 
     // --- EMPRUNT ET RÉSERVATION ---
     Route::post('/emprunter/{id}', [LivreController::class, 'emprunter'])->name('emprunter.livre');
     Route::post('/reserver/{id}', [LivreController::class, 'reserver'])->name('reserver.exemplaire');
-
-    Route::post('/reservation/annuler/{exemplaire}', [EmpruntController::class, 'annulerReservation'])->name('reservation.annuler');
-
+    
     // --- GESTION DES SALARIÉS ---
     Route::get('/salaries', [SalarieController::class, 'index'])->name('salaries.index');
-    Route::get('/salaries/nouveau', [SalarieController::class, 'create'])->name('salaries.create');
-    Route::post('/salaries', [SalarieController::class, 'store'])->name('salaries.store');
-
 });
-
-// --- AUTRES ROUTES ---
-Route::get('/campus', [CampusController::class, 'index']);
-Route::get('/campus/{ville}', [CampusController::class, 'show']);
 
 require __DIR__.'/auth.php';

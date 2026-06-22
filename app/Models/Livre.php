@@ -9,7 +9,7 @@ class Livre extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['titre', 'auteur_id', 'categorie_id'];
+    protected $fillable = ['titre', 'auteur_id', 'categorie_id', 'isbn'];
 
     /**
      * Relation : Un livre appartient à un Auteur
@@ -28,11 +28,19 @@ class Livre extends Model
     }
 
     /**
-     * ✅ SÉCURISATION : Utilisation du namespace absolu pour l'autoloader
      * Un livre possède plusieurs exemplaires physiques
      */
     public function exemplaires()
     {
         return $this->hasMany(\App\Models\Exemplaire::class, 'livre_id');
+    }
+
+    /**
+     * ✅ AJOUT : Relation pour les "Coups de cœur"
+     * Permet de vérifier facilement si un livre est favori pour un utilisateur
+     */
+    public function favoris()
+    {
+        return $this->hasMany(\App\Models\Favori::class, 'livre_id');
     }
 }

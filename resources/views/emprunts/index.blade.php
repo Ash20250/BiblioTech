@@ -1,97 +1,94 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-serif text-2xl text-[#4A3728] leading-tight">
-            {{ __("📜 Registre des Mouvements d'Ouvrages") }}
+            {{ __("📜 Registre des Mouvements") }}
         </h2>
     </x-slot>
 
     <div class="py-12 px-4">
         <div class="max-w-6xl mx-auto">
-            
-            {{-- Notifications de succès --}}
-            @if(session('success'))
-                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-sm mb-6 font-serif">
-                    {{ session('success') }}
-                </div>
-            @endif
 
-            <div class="bg-[#FFFDF9] shadow-2xl border-2 border-[#D2B48C] rounded-lg overflow-hidden">
+            {{-- SECTION FILTRES (Encadrée et stylisée) --}}
+            <div class="bg-[#FFFDF9] border border-[#4A3728] rounded-lg p-6 shadow-lg mb-8">
+                <form action="{{ route('emprunts.index') }}" method="GET" class="flex flex-wrap items-end gap-8">
+                    
+                    {{-- Filtre Statut --}}
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="block text-xs font-bold text-[#4A3728] uppercase tracking-wider mb-2">Filtrer par statut</label>
+                        <select name="statut" onchange="this.form.submit()" class="w-full bg-white border border-[#D2B48C] rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#8B4513] text-[#5D4037]">
+                            <option value="">Tous les registres</option>
+                            <option value="en_cours" {{ request('statut') == 'en_cours' ? 'selected' : '' }}>En cours</option>
+                            <option value="en_retard" {{ request('statut') == 'en_retard' ? 'selected' : '' }}>Alertes retard</option>
+                        </select>
+                    </div>
+
+                    {{-- Filtre Date --}}
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="block text-xs font-bold text-[#4A3728] uppercase tracking-wider mb-2">Date retour prévue</label>
+                        <input type="date" name="date_prevue" value="{{ request('date_prevue') }}" onchange="this.form.submit()" class="w-full bg-white border border-[#D2B48C] rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#8B4513] text-[#5D4037]">
+                    </div>
+
+                    {{-- Bouton Reset --}}
+                    <div>
+                        <a href="{{ route('emprunts.index') }}" class="inline-block bg-[#4A3728] text-[#F4F1EA] px-6 py-2 rounded-md hover:bg-[#8B4513] transition font-bold shadow-sm">
+                            Réinitialiser
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            {{-- TABLEAU PROFESSIONNEL --}}
+            <div class="shadow-2xl rounded-lg overflow-hidden border border-[#4A3728]">
                 <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-[#4A3728] text-[#F4F1EA] font-serif uppercase text-xs tracking-widest">
-                            <th class="p-5 border-b border-[#D2B48C]">Emprunteur</th>
-                            <th class="p-5 border-b border-[#D2B48C]">Ouvrage</th>
-                            <th class="p-5 border-b border-[#D2B48C]">Date de Sortie</th>
-                            <th class="p-5 border-b border-[#D2B48C]">Statut / Alerte</th>
-                            <th class="p-5 border-b border-[#D2B48C] text-right">Action</th>
+                    <thead class="bg-[#4A3728] text-[#F4F1EA]">
+                        <tr>
+                            <th class="p-5 font-bold uppercase text-sm tracking-wider">USAGER</th>
+                            <th class="p-5 font-bold uppercase text-sm tracking-wider">OUVRAGE</th>
+                            <th class="p-5 font-bold uppercase text-sm tracking-wider">DATE D'EMPRUNT</th>
+                            <th class="p-5 font-bold uppercase text-sm tracking-wider">RETOUR PRÉVU</th>
+                            <th class="p-5 font-bold uppercase text-sm tracking-wider">STATUT</th>
+                            <th class="p-5 font-bold uppercase text-sm tracking-wider text-right">ACTION</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-[#F4F1EA] text-[#5D4037] font-serif">
+                    <tbody class="bg-[#FFFDF9] divide-y divide-[#D2B48C] text-[#5D4037]">
                         @forelse($emprunts as $emprunt)
-                            @php
-                                // Calcul sécurisé des jours depuis la sortie
-                                $joursDepuisSortie = $emprunt->created_at ? $emprunt->created_at->diffInDays(now()) : 0;
-                            @endphp
-                            <tr class="hover:bg-[#FDFBF7] transition-colors">
-                                {{-- Nom de l'emprunteur (avec sécurité si supprimé) --}}
-                                <td class="p-5 font-bold">
-                                    {{ $emprunt->salarie->nom ?? $emprunt->salarie->name ?? 'Usager inconnu' }}
-                                </td>
-                                
-                                {{-- Titre du livre --}}
-                                <td class="p-5 italic text-[#4A3728]">
-                                    "{{ $emprunt->livre->titre ?? $emprunt->exemplaire->livre->titre ?? 'Ouvrage inconnu' }}"
-                                </td>
-                                
-                                {{-- Date d'emprunt --}}
-                                <td class="p-5 text-[#4A3728]">
-                                    {{ $emprunt->created_at ? $emprunt->created_at->format('d/m/Y') : 'N/A' }}
-                                </td>
-                                
-                                {{-- Colonne Statut / Alerte --}}
-                                <td class="p-5">
-                                    @if(!$emprunt->rendu_le)
-                                        @if($joursDepuisSortie >= 14)
-                                            <span class="inline-block bg-red-600 text-white px-3 py-1 rounded-md text-xs font-bold animate-pulse shadow-sm">
-                                                ⚠️ RETARD ({{ $joursDepuisSortie }} jours)
-                                            </span>
-                                        @else
-                                            <span class="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-md text-xs font-medium border border-blue-200 shadow-sm">
-                                                ⏳ En cours ({{ $joursDepuisSortie }}j)
-                                            </span>
-                                        @endif
-                                    @else
-                                        <span class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-md text-xs font-medium border border-green-200 shadow-sm">
-                                            {{-- Sécurité Carbon pour le formatage de la date de retour --}}
-                                            ✅ Rendu le {{ \Carbon\Carbon::parse($emprunt->rendu_le)->format('d/m/Y') }}
-                                        </span>
-                                    @endif
-                                </td>
-
-                                {{-- Colonne Action (Bouton relooké et sécurisé) --}}
-                                <td class="p-5 text-right">
-                                    @if(!$emprunt->rendu_le)
-                                        <form action="{{ route('emprunts.retour', $emprunt->id) }}" method="POST" onsubmit="return confirm('Confirmer le retour de cet ouvrage à la bibliothèque ?')">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button type="submit" class="bg-[#8B4513] text-[#F4F1EA] px-3 py-1 rounded text-xs hover:bg-[#5D4037] transition shadow-sm font-bold uppercase border-none tracking-wider">
-                                                Retourner
-                                            </button>
-                                        </form>
-                                    @else
-                                        <span class="text-gray-400 text-xs italic pr-2">Clos</span>
-                                    @endif
-                                </td>
-                            </tr>
+                        <tr class="hover:bg-[#FDFBF7] transition">
+                            <td class="p-5 font-medium">{{ $emprunt->usager->name ?? 'Inconnu' }}</td>
+                            <td class="p-5 italic">{{ $emprunt->exemplaire->livre->titre ?? 'Inconnu' }}</td>
+                            <td class="p-5">{{ \Carbon\Carbon::parse($emprunt->date_emprunt)->format('d/m/Y') }}</td>
+                            <td class="p-5">{{ \Carbon\Carbon::parse($emprunt->date_retour_prevue)->format('d/m/Y') }}</td>
+                            <td class="p-5">
+                                @if(!$emprunt->date_retour_effectif)
+                                    <span class="{{ \Carbon\Carbon::parse($emprunt->date_retour_prevue)->isPast() ? 'text-red-600 font-bold' : 'text-blue-600' }}">
+                                        {{ \Carbon\Carbon::parse($emprunt->date_retour_prevue)->isPast() ? '⚠️ En retard' : '⏳ En cours' }}
+                                    </span>
+                                @else
+                                    <span class="text-green-600 font-bold">✅ Rendu</span>
+                                @endif
+                            </td>
+                            <td class="p-5 text-right">
+                                @if(!$emprunt->date_retour_effectif)
+                                    <form action="{{ route('emprunts.retourner', $emprunt->id) }}" method="POST" onsubmit="return confirm('Confirmer le retour ?')">
+                                        @csrf @method('PATCH')
+                                        <button type="submit" class="bg-[#2D5A27] text-white px-4 py-2 rounded text-xs font-bold hover:bg-[#1E3D1A] transition shadow-md">
+                                            VALIDER RETOUR
+                                        </button>
+                                    </form>
+                                @endif
+                            </td>
+                        </tr>
                         @empty
-                            <tr>
-                                <td colspan="5" class="p-10 text-center text-[#795548] italic bg-[#FFFDF9]">
-                                    📜 Aucun mouvement d'ouvrage n'est consigné dans le registre pour le moment.
-                                </td>
-                            </tr>
+                        <tr>
+                            <td colspan="6" class="p-10 text-center italic text-[#795548]">Aucun mouvement trouvé.</td>
+                        </tr>
                         @endforelse
                     </tbody>
                 </table>
+                
+                {{-- PAGINATION --}}
+                <div class="p-4 bg-[#F4F1EA] border-t border-[#4A3728]">
+                    {{ $emprunts->links() }}
+                </div>
             </div>
         </div>
     </div>

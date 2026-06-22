@@ -4,27 +4,33 @@ namespace App\Http\Controllers;
 
 use App\Models\Emprunt;
 use App\Models\User;
+use App\Models\Exemplaire;
 use App\Models\Livre;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth; 
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class EmpruntController extends Controller
 {
+    /**
+     * Affiche le registre avec filtres
+     */
     public function index(Request $request)
     {
+        // Chargement eager (with) indispensable pour éviter "Usager inconnu"
         $query = Emprunt::with(['usager', 'exemplaire.livre']);
 
+        // Application des filtres de statut
         if ($request->filled('statut')) {
             if ($request->statut === 'en_cours') {
                 $query->whereNull('date_retour_effectif');
-            } 
-            elseif ($request->statut === 'en_retard') {
+            } elseif ($request->statut === 'en_retard') {
                 $query->whereNull('date_retour_effectif')
-                      ->where('date_retour_prevue', '<', now());
+                      ->where('date_retour_prevue', '<', Carbon::now());
             }
         }
 
+        // Filtre par date prévue
         if ($request->filled('date_prevue')) {
             $query->whereDate('date_retour_prevue', $request->date_prevue);
         }
@@ -33,16 +39,14 @@ class EmpruntController extends Controller
                           ->paginate(15)
                           ->withQueryString();
 
-        return view('emprunts', compact('emprunts'));
+        return view('emprunts.index', compact('emprunts'));
     }
 
     public function create()
     {
-        // Extraction avec 'usager' en minuscule pour correspondre à ta table MySQL
-        $users = User::where('role', 'usager')->get();
-
-        // Récupère les exemplaires qui n'ont pas d'emprunt en cours
-        $exemplaires = \App\Models\Exemplaire::with('livre')
+        $users = User::where('role', 'usager')->orderBy('name')->get();
+        
+        $exemplaires = Exemplaire::with('livre')
             ->whereDoesntHave('emprunts', function ($query) {
                 $query->whereNull('date_retour_effectif');
             })->get();
@@ -52,60 +56,40 @@ class EmpruntController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'usager_id'          => 'required|exists:users,id',
             'exemplaire_id'      => 'required|exists:exemplaires,id',
             'date_emprunt'       => 'required|date',
             'date_retour_prevue' => 'required|date|after_or_equal:date_emprunt',
         ]);
 
-        $exemplaire = \App\Models\Exemplaire::findOrFail($request->exemplaire_id);
+        $exemplaire = Exemplaire::findOrFail($validated['exemplaire_id']);
 
-        if ($exemplaire->reserved_by_user_id && $exemplaire->reserved_by_user_id != $request->usager_id) {
-            return redirect()->back()
-                ->withErrors(['exemplaire_id' => '❌ Cet exemplaire est réservé par un autre usager.'])
-                ->withInput();
+        if ($exemplaire->reserved_by_user_id && $exemplaire->reserved_by_user_id != $validated['usager_id']) {
+            return redirect()->back()->withErrors(['exemplaire_id' => '❌ Exemplaire réservé par un autre usager.'])->withInput();
         }
 
-        $nbEmpruntsActuels = Emprunt::where('usager_id', $request->usager_id)
-            ->whereNull('date_retour_effectif')
-            ->count();
-
-        if ($nbEmpruntsActuels >= 5) {
-            return redirect()->back()
-                ->withErrors(['usager_id' => '❌ Cet usager a déjà atteint la limite de 5 livres.'])
-                ->withInput();
+        if (Emprunt::where('usager_id', $validated['usager_id'])->whereNull('date_retour_effectif')->count() >= 5) {
+            return redirect()->back()->withErrors(['usager_id' => '❌ Quota de 5 livres atteint.'])->withInput();
         }
 
-        Emprunt::create([
-            'usager_id'          => $request->usager_id,
-            'exemplaire_id'      => $request->exemplaire_id,
-            'date_emprunt'       => $request->date_emprunt,
-            'date_retour_prevue' => $request->date_retour_prevue,
-            'date_retour_effectif' => null, 
-        ]);
+        Emprunt::create($validated + ['date_retour_effectif' => null]);
 
         $exemplaire->update(['reserved_by_user_id' => null]);
 
-        return redirect()->route('emprunts.index')->with('success', '📜 Le prêt a été validé !');
+        return redirect()->route('emprunts.index')->with('success', '📜 Prêt validé avec succès !');
     }
 
     public function emprunterParUsager(Livre $livre)
     {
-        $user = auth()->user();
-
-        $nbEmpruntsActuels = Emprunt::where('usager_id', $user->id)
-            ->whereNull('date_retour_effectif')
-            ->count();
-
-        if ($nbEmpruntsActuels >= 5) {
+        $user = Auth::user();
+        if (Emprunt::where('usager_id', $user->id)->whereNull('date_retour_effectif')->count() >= 5) {
             return redirect()->back()->with('error', '⚠️ Quota de 5 livres atteint !');
         }
 
         $exemplaire = $livre->exemplaires()
             ->where(function($query) use ($user) {
-                $query->whereNull('reserved_by_user_id')
-                      ->orWhere('reserved_by_user_id', $user->id);
+                $query->whereNull('reserved_by_user_id')->orWhere('reserved_by_user_id', $user->id);
             })
             ->whereDoesntHave('emprunts', function($q) {
                 $q->whereNull('date_retour_effectif');
@@ -116,10 +100,10 @@ class EmpruntController extends Controller
         }
 
         Emprunt::create([
-            'usager_id'          => $user->id,
-            'exemplaire_id'      => $exemplaire->id,
-            'date_emprunt'       => now(),
-            'date_retour_prevue' => now()->addDays(30),
+            'usager_id'            => $user->id,
+            'exemplaire_id'        => $exemplaire->id,
+            'date_emprunt'         => now(),
+            'date_retour_prevue'   => now()->addDays(30),
             'date_retour_effectif' => null,
         ]);
 
@@ -128,29 +112,21 @@ class EmpruntController extends Controller
         return redirect()->back()->with('success', '📖 Livre emprunté avec succès !');
     }
 
-    public function reserver(\App\Models\Exemplaire $exemplaire)
+    public function reserver(Exemplaire $exemplaire)
     {
         if (!is_null($exemplaire->reserved_by_user_id)) {
             return redirect()->back()->with('error', '⚠️ Déjà réservé.');
         }
-
-        $exemplaire->update([
-            'reserved_by_user_id' => Auth::id() 
-        ]);
-
+        $exemplaire->update(['reserved_by_user_id' => Auth::id()]);
         return redirect()->back()->with('success', '✅ Réservation confirmée !');
     }
 
-    public function annulerReservation(\App\Models\Exemplaire $exemplaire)
+    public function annulerReservation(Exemplaire $exemplaire)
     {
         if ($exemplaire->reserved_by_user_id !== Auth::id()) {
             return redirect()->back()->with('error', 'Action non autorisée.');
         }
-
-        $exemplaire->update([
-            'reserved_by_user_id' => null
-        ]);
-
+        $exemplaire->update(['reserved_by_user_id' => null]);
         return redirect()->back()->with('success', 'La réservation a été annulée.');
     }
 
@@ -158,13 +134,16 @@ class EmpruntController extends Controller
     {
         $emprunt = Emprunt::findOrFail($id);
         
-        $emprunt->update([
-            'date_retour_effectif' => now()
-        ]);
+        // Sécurité : Vérifier s'il n'est pas déjà retourné
+        if ($emprunt->date_retour_effectif) {
+            return redirect()->back()->with('error', '⚠️ Déjà retourné.');
+        }
 
-        $emprunt->exemplaire->update([
-            'reserved_by_user_id' => null 
-        ]);
+        $emprunt->update(['date_retour_effectif' => now()]);
+        
+        if ($emprunt->exemplaire) {
+            $emprunt->exemplaire->update(['reserved_by_user_id' => null]);
+        }
 
         return redirect()->back()->with('success', '📖 Le livre est de retour.');
     }

@@ -9,24 +9,19 @@ class Emprunt extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'date_emprunt', 
-        'date_retour_prevue', 
-        'date_retour', 
-        'usager_id', 
-        'exemplaire_id',
-    ];
+protected $fillable = [
+    'date_emprunt', 
+    'date_retour_prevue', 
+    'date_retour_effectif',
+    'usager_id', 
+    'exemplaire_id',
+];
 
-    /**
-     * ✅ TRÈS IMPORTANT POUR TA VUE BLADE : 
-     * Convertit automatiquement les chaînes de la BDD en instances Carbon.
-     * C'est ce qui te permet d'écrire ->format('d/m/Y') et ->diffInDays() directement dans la vue.
-     */
-    protected $casts = [
-        'date_emprunt'       => 'datetime',
-        'date_retour_prevue' => 'datetime',
-        'date_retour'        => 'datetime',
-    ];
+protected $casts = [
+    'date_emprunt'         => 'datetime',
+    'date_retour_prevue'   => 'datetime',
+    'date_retour_effectif' => 'datetime', 
+];
 
     /**
      * Relation : Un emprunt appartient à un usager (User)

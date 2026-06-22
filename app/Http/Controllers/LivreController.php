@@ -7,6 +7,7 @@ use App\Models\Auteur;
 use App\Models\Categorie;
 use App\Models\Exemplaire;
 use App\Models\Emprunt;
+use App\Models\Favori;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
@@ -15,11 +16,11 @@ use Carbon\Carbon;
 class LivreController extends Controller
 {
     /**
-     * Affiche le catalogue avec filtres
+     * Affiche le catalogue avec filtres et relations nécessaires
      */
     public function index(Request $request)
     {
-        $query = Livre::with(['auteur', 'categorie', 'exemplaires.emprunts']);
+        $query = Livre::with(['auteur', 'categorie', 'exemplaires.emprunts', 'favoris']);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -39,6 +40,32 @@ class LivreController extends Controller
         $categories = Categorie::orderBy('nom')->get();
 
         return view('catalogue', compact('livres', 'categories'));
+    }
+
+    /**
+     * Bascule le statut favori du livre pour l'utilisateur connecté
+     */
+    public function toggleFavorite($id)
+    {
+        $livre = Livre::findOrFail($id);
+        $user = Auth::user();
+
+        $favori = Favori::where('user_id', $user->id)
+                        ->where('livre_id', $livre->id)
+                        ->first();
+
+        if ($favori) {
+            $favori->delete();
+            $message = 'Retiré de vos coups de cœur.';
+        } else {
+            Favori::create([
+                'user_id' => $user->id,
+                'livre_id' => $livre->id,
+            ]);
+            $message = 'Ajouté à vos coups de cœur !';
+        }
+
+        return back()->with('success', $message);
     }
 
     public function create()
@@ -106,9 +133,6 @@ class LivreController extends Controller
         return redirect()->back()->with('success', '🗑️ Le livre a été retiré.');
     }
 
-    /**
-     * Action pour Emprunter un livre
-     */
     public function emprunter($id)
     {
         $livre = Livre::findOrFail($id);
@@ -136,26 +160,17 @@ class LivreController extends Controller
         return back()->with('success', 'Le livre "' . $livre->titre . '" a été emprunté.');
     }
 
-    /**
-     * Action pour Rendre un livre (AJOUTÉE)
-     */
-public function rendre($emprunt_id)
-{
-    $emprunt = Emprunt::findOrFail($emprunt_id);
+    public function rendre($emprunt_id)
+    {
+        $emprunt = Emprunt::findOrFail($emprunt_id);
+        $emprunt->update(['date_retour' => Carbon::now()]);
 
-    // DÉBOGAGE : Si ce message s'affiche après avoir cliqué, le problème est dans les lignes ci-dessous
-    // Si ce message ne s'affiche pas, le problème est dans la route ou le formulaire (Blade)
-    // dd($emprunt->exemplaire_id); 
+        if ($emprunt->exemplaire) {
+            $emprunt->exemplaire->update(['statut_id' => 1]);
+        }
 
-    $emprunt->update(['date_retour' => \Carbon\Carbon::now()]);
-
-    // Vérifiez ici que la relation exemplaire existe et est bien chargée
-    if ($emprunt->exemplaire) {
-        $emprunt->exemplaire->update(['statut_id' => 1]);
+        return back()->with('success', 'Livre retourné !');
     }
-
-    return back()->with('success', 'Livre retourné !');
-}
 
     public function reserver($exemplaire_id)
     {

@@ -23,6 +23,10 @@
 
                     {{-- ZONE ADMIN : Visible uniquement par le bibliothécaire --}}
                     @if(Auth::user()->role === 'bibliothecaire')
+                        <x-nav-link :href="route('registre.index')" :active="request()->routeIs('registre.index')" class="text-[#F4F1EA] hover:text-[#D2B48C] border-none uppercase text-[10px] tracking-widest font-bold">
+                            {{ __('Registre') }}
+                        </x-nav-link>
+
                         <x-nav-link :href="route('salaries.index')" :active="request()->routeIs('salaries.index')" class="text-[#F4F1EA] hover:text-[#D2B48C] border-none uppercase text-[10px] tracking-widest font-bold">
                             {{ __('Membres') }}
                         </x-nav-link>
@@ -59,6 +63,7 @@
         </div>
     </div>
 
+    {{-- Menu Mobile --}}
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden bg-[#3D2B1E]">
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="text-[#F4F1EA]">
@@ -69,6 +74,9 @@
             </x-responsive-nav-link>
 
             @if(Auth::user()->role === 'bibliothecaire')
+                <x-responsive-nav-link :href="route('registre.index')" :active="request()->routeIs('registre.index')" class="text-[#F4F1EA]">
+                    {{ __('Registre') }}
+                </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('emprunts.index')" :active="request()->routeIs('emprunts.index')" class="text-[#F4F1EA]">
                     {{ __('Gestion des Emprunts') }}
                 </x-responsive-nav-link>
