@@ -25,7 +25,7 @@ class Livre {
   - statut_id : int
 }
 
-class Salarie {
+class Usager {
   - id : int
   - nom : string
   - email : string
@@ -35,7 +35,7 @@ class Salarie {
 class Emprunt << (P,#FFAAAA) Table Pivot >> {
   - id : int
   - livre_id : int
-  - salarie_id : int
+  - usager_id : int
   - date_emprunt : date
   - date_retour_prevue : date
 }
@@ -43,7 +43,7 @@ class Emprunt << (P,#FFAAAA) Table Pivot >> {
 class Favoris << (P,#FFAAAA) Table Pivot >> {
   - id : int
   - livre_id : int
-  - salarie_id : int
+  - usager_id : int
 }
 
 ' Relations
@@ -52,9 +52,9 @@ Categorie "1" -- "0..*" Livre : classifie
 Statut "1" -- "0..*" Livre : définit l'état
 
 Livre "1" -- "0..*" Emprunt : est loué
-Salarie "1" -- "0..*" Emprunt : effectue
+Usager "1" -- "0..*" Emprunt : effectue
 
-Livre "0..*" -- "0..*" Salarie : favorise >
-(Livre, Salarie) .. Favoris
+Livre "0..*" -- "0..*" Usager : favorise >
+(Livre, Usager) .. Favoris
 
 @enduml
