@@ -10,7 +10,7 @@ Bienvenue sur le projet **BiblioTech**, une application de gestion de bibliothè
 - Interface d'administration pour les bibliothécaires.
 
 ## 🚀 Installation
-1. Cloner le projet : `git clone [URL_REPO]`
+1. Cloner le projet : `git clone https://github.com/Ash20250/BiblioTech.git`
 2. Installer les dépendances : `composer install`
 3. Configurer l'environnement : `cp .env.example .env` puis modifier les accès BDD.
 4. Générer la clé : `php artisan key:generate`
