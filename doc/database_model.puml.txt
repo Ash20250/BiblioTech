@@ -40,10 +40,21 @@ class Emprunt << (P,#FFAAAA) Table Pivot >> {
   - date_retour_prevue : date
 }
 
+class Favoris << (P,#FFAAAA) Table Pivot >> {
+  - id : int
+  - livre_id : int
+  - salarie_id : int
+}
+
 ' Relations
 Auteur "1" -- "1..*" Livre : écrit
 Categorie "1" -- "0..*" Livre : classifie
 Statut "1" -- "0..*" Livre : définit l'état
+
 Livre "1" -- "0..*" Emprunt : est loué
 Salarie "1" -- "0..*" Emprunt : effectue
+
+Livre "0..*" -- "0..*" Salarie : favorise >
+(Livre, Salarie) .. Favoris
+
 @enduml
