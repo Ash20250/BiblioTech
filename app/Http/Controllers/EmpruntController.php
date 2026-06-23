@@ -12,15 +12,10 @@ use Carbon\Carbon;
 
 class EmpruntController extends Controller
 {
-    /**
-     * Affiche le registre avec filtres
-     */
     public function index(Request $request)
     {
-        // Chargement eager (with) indispensable pour éviter "Usager inconnu"
         $query = Emprunt::with(['usager', 'exemplaire.livre']);
 
-        // Application des filtres de statut
         if ($request->filled('statut')) {
             if ($request->statut === 'en_cours') {
                 $query->whereNull('date_retour_effectif');
@@ -30,7 +25,6 @@ class EmpruntController extends Controller
             }
         }
 
-        // Filtre par date prévue
         if ($request->filled('date_prevue')) {
             $query->whereDate('date_retour_prevue', $request->date_prevue);
         }
@@ -62,6 +56,14 @@ class EmpruntController extends Controller
             'date_emprunt'       => 'required|date',
             'date_retour_prevue' => 'required|date|after_or_equal:date_emprunt',
         ]);
+
+        $dejaEmprunte = Emprunt::where('usager_id', $validated['usager_id'])
+                               ->whereNull('date_retour_effectif')
+                               ->exists();
+
+        if ($dejaEmprunte) {
+            return redirect()->back()->withErrors(['usager_id' => 'Vous avez déjà un emprunt en cours.'])->withInput();
+        }
 
         $exemplaire = Exemplaire::findOrFail($validated['exemplaire_id']);
 
@@ -134,7 +136,6 @@ class EmpruntController extends Controller
     {
         $emprunt = Emprunt::findOrFail($id);
         
-        // Sécurité : Vérifier s'il n'est pas déjà retourné
         if ($emprunt->date_retour_effectif) {
             return redirect()->back()->with('error', '⚠️ Déjà retourné.');
         }
