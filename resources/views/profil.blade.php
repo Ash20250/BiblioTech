@@ -77,9 +77,10 @@
                         @forelse($emprunts as $emprunt)
                             <tr class="hover:bg-amber-50/50 transition">
                                 <td class="p-4 font-semibold text-amber-800">{{ $emprunt->exemplaire->livre->titre ?? 'Livre inconnu' }}</td>
-                                <td class="p-4 text-gray-600">{{ $emprunt->date_emprunt ? $emprunt->date_emprunt->format('d/m/Y') : 'N/A' }}</td>
+                                <td class="p-4 text-gray-600">{{ $emprunt->date_emprunt ? \Carbon\Carbon::parse($emprunt->date_emprunt)->format('d/m/Y') : 'N/A' }}</td>
                                 <td class="p-4 text-center">
-                                    @if($emprunt->date_retour)
+                                    {{-- CORRECTION ICI : utilisation de date_retour_effectif --}}
+                                    @if($emprunt->date_retour_effectif)
                                         <span class="text-green-600 font-bold text-sm">✅ RENDU</span>
                                     @else
                                         <form action="{{ route('emprunts.retourner', $emprunt->id) }}" method="POST">

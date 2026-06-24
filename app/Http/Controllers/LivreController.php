@@ -15,12 +15,9 @@ use Carbon\Carbon;
 
 class LivreController extends Controller
 {
-    /**
-     * Affiche le catalogue avec filtres et relations nécessaires
-     */
     public function index(Request $request)
     {
-        $query = Livre::with(['auteur', 'categorie', 'exemplaires.emprunts', 'favoris']);
+        $query = Livre::with(['auteur', 'categorie', 'favoris', 'exemplaires']);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -42,30 +39,18 @@ class LivreController extends Controller
         return view('catalogue', compact('livres', 'categories'));
     }
 
-    /**
-     * Bascule le statut favori du livre pour l'utilisateur connecté
-     */
     public function toggleFavorite($id)
     {
         $livre = Livre::findOrFail($id);
         $user = Auth::user();
-
-        $favori = Favori::where('user_id', $user->id)
-                        ->where('livre_id', $livre->id)
-                        ->first();
+        $favori = Favori::where('user_id', $user->id)->where('livre_id', $livre->id)->first();
 
         if ($favori) {
             $favori->delete();
-            $message = 'Retiré de vos coups de cœur.';
         } else {
-            Favori::create([
-                'user_id' => $user->id,
-                'livre_id' => $livre->id,
-            ]);
-            $message = 'Ajouté à vos coups de cœur !';
+            Favori::create(['user_id' => $user->id, 'livre_id' => $livre->id]);
         }
-
-        return back()->with('success', $message);
+        return back();
     }
 
     public function create()
@@ -101,7 +86,7 @@ class LivreController extends Controller
             'mise_en_service' => now(),
         ]);
 
-        return redirect()->route('catalogue')->with('success', '✨ Nouveau livre ajouté !');
+        return redirect()->route('catalogue')->with('success', 'Nouveau livre ajouté !');
     }
 
     public function edit($id)
@@ -115,32 +100,29 @@ class LivreController extends Controller
     public function update(Request $request, $id)
     {
         $livre = Livre::findOrFail($id);
-        
         $request->validate([
             'titre' => ['required', 'max:255', Rule::unique('livres')->ignore($livre->id)],
             'auteur_id' => 'required|exists:auteurs,id',
             'categorie_id' => 'required|exists:categories,id',
         ]);
 
-        $livre->update($request->all()); 
-        return redirect()->route('catalogue')->with('success', '💾 Le livre a été modifié.');
+        $livre->update($request->all());
+        return redirect()->route('catalogue');
     }
 
     public function destroy($id)
     {
-        $livre = Livre::findOrFail($id);
-        $livre->delete(); 
-        return redirect()->back()->with('success', '🗑️ Le livre a été retiré.');
+        Livre::findOrFail($id)->delete();
+        return redirect()->back();
     }
 
     public function emprunter($id)
     {
         $livre = Livre::findOrFail($id);
-        
         $exemplaire = $livre->exemplaires()
             ->whereNull('reserved_by_user_id')
             ->whereDoesntHave('emprunts', function($query) {
-                $query->whereNull('date_retour');
+                $query->whereNull('date_retour_effectif');
             })
             ->first();
 
@@ -149,41 +131,23 @@ class LivreController extends Controller
         }
 
         Emprunt::create([
-            'usager_id' => Auth::id(), 
+            'usager_id' => Auth::id(),
             'exemplaire_id' => $exemplaire->id,
             'date_emprunt' => Carbon::now(),
-            'date_retour_prevue' => Carbon::now()->addDays(30), 
+            'date_retour_prevue' => Carbon::now()->addDays(30),
         ]);
 
-        $exemplaire->update(['statut_id' => 2]); 
-
-        return back()->with('success', 'Le livre "' . $livre->titre . '" a été emprunté.');
-    }
-
-    public function rendre($emprunt_id)
-    {
-        $emprunt = Emprunt::findOrFail($emprunt_id);
-        $emprunt->update(['date_retour' => Carbon::now()]);
-
-        if ($emprunt->exemplaire) {
-            $emprunt->exemplaire->update(['statut_id' => 1]);
-        }
-
-        return back()->with('success', 'Livre retourné !');
+        $exemplaire->update(['statut_id' => 2]);
+        return back()->with('success', 'Livre emprunté.');
     }
 
     public function reserver($exemplaire_id)
     {
         $exemplaire = Exemplaire::findOrFail($exemplaire_id);
-
         if ($exemplaire->reserved_by_user_id !== null) {
             return back()->with('error', 'Cet exemplaire est déjà réservé.');
         }
-
-        $exemplaire->update([
-            'reserved_by_user_id' => Auth::id(),
-        ]);
-
-        return back()->with('success', 'Réservation effectuée avec succès !');
+        $exemplaire->update(['reserved_by_user_id' => Auth::id()]);
+        return back()->with('success', 'Réservation effectuée !');
     }
 }

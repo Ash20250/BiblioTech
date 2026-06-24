@@ -11,9 +11,6 @@ use Illuminate\View\View;
 
 class ProfilController extends Controller
 {
-    /**
-     * Affiche l'espace personnel.
-     */
     public function index(): View
     {
         $user = Auth::user();
@@ -23,7 +20,8 @@ class ProfilController extends Controller
             ->orderBy('date_emprunt', 'desc')
             ->get();
 
-        $nbLivresEnCours = $emprunts->whereNull('date_retour')->count();
+        // CORRECTION : utilisation de date_retour_effectif
+        $nbLivresEnCours = $emprunts->whereNull('date_retour_effectif')->count();
 
         $favoris = Favori::where('user_id', $user->id)
             ->with(['livre.auteur', 'livre.categorie'])
@@ -36,9 +34,6 @@ class ProfilController extends Controller
         return view('profil', compact('user', 'emprunts', 'nbLivresEnCours', 'favoris', 'reservations'));
     }
 
-    /**
-     * Annule une réservation d'exemplaire.
-     */
     public function annulerReservation($id)
     {
         $exemplaire = Exemplaire::where('id', $id)
@@ -50,16 +45,19 @@ class ProfilController extends Controller
         return back()->with('success', 'Réservation annulée.');
     }
 
-    /**
-     * Enregistre le retour d'un emprunt.
-     */
     public function retourner($id)
     {
         $emprunt = Emprunt::where('id', $id)
             ->where('usager_id', Auth::id())
             ->firstOrFail();
 
-        $emprunt->update(['date_retour' => now()]);
+        // CORRECTION : mise à jour de la bonne colonne
+        $emprunt->update(['date_retour_effectif' => now()]);
+
+        // CORRECTION : remise à disposition de l'exemplaire pour le catalogue
+        if ($emprunt->exemplaire) {
+            $emprunt->exemplaire->update(['statut_id' => 1]);
+        }
 
         return back()->with('success', 'Livre rendu avec succès.');
     }

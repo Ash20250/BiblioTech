@@ -7,7 +7,6 @@
 
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6 py-6">
         
-        {{-- Messages de notification --}}
         @if(session('success'))
             <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-sm mb-4">
                 <p>{{ session('success') }}</p>
@@ -20,10 +19,8 @@
             </div>
         @endif
 
-        {{-- Barre de recherche & Ajout --}}
         <div class="bg-[#FFFDF9] p-6 rounded-lg shadow-md border border-[#D2B48C]">
             <div class="flex flex-col md:flex-row justify-between items-center gap-6">
-                
                 <form action="{{ route('catalogue') }}" method="GET" class="flex-1 flex gap-4 w-full">
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Titre ou auteur..." 
                         class="flex-1 p-3 border-2 border-[#D2B48C] rounded-md focus:border-[#8B4513] focus:ring-0 outline-none">
@@ -50,7 +47,6 @@
             </div>
         </div>
 
-        {{-- Tableau du Catalogue --}}
         <div class="bg-[#FFFDF9] rounded-lg shadow-xl border-2 border-[#D2B48C] overflow-hidden">
             <table class="w-full text-left border-collapse">
                 <thead>
@@ -69,14 +65,14 @@
                     @forelse($livres as $livre)
                         @php
                             $userId = Auth::id();
-                            $nbDispo = $livre->exemplaires->where('statut_id', 1)->count();
+                            $nbDispo = $livre->exemplaires->filter(function($ex) {
+                                return $ex->emprunts->whereNull('date_retour_effectif')->isEmpty();
+                            })->count();
                             $monExemplaireReserve = $userId ? $livre->exemplaires->where('reserved_by_user_id', $userId)->first() : null;
-                            // On vérifie si le livre est déjà dans les favoris de l'utilisateur
                             $isFavori = $userId ? $livre->favoris->contains('user_id', $userId) : false;
                         @endphp
                         
                         <tr class="border-b border-[#F4F1EA] hover:bg-[#FDFBF7] transition-colors">
-                            {{-- Colonne Cœur --}}
                             <td class="p-5 text-center">
                                 @auth
                                     <form action="{{ route('livres.toggle-favorite', $livre->id) }}" method="POST">
